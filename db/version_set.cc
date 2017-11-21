@@ -20,7 +20,7 @@
 
 namespace leveldb 
 {
-//compact¹ı³ÌÖĞ£¬level-0ÖĞµÄsstableÓÉmemtableÖ±½ÓdumpÉú³É£¬²»×ö´óĞ¡µÄÏŞÖÆ£¬·Çlevel-0ÖĞµÄsstableµÄ´óĞ¡Éè¶¨ÎªkTargetFileSize
+//compactè¿‡ç¨‹ä¸­ï¼Œlevel-0ä¸­çš„sstableç”±memtableç›´æ¥dumpç”Ÿæˆï¼Œä¸åšå¤§å°çš„é™åˆ¶ï¼Œélevel-0ä¸­çš„sstableçš„å¤§å°è®¾å®šä¸ºkTargetFileSize
 static const int kTargetFileSize = 2 * 1048576;	//2 * 1024 * 1024
 
 // Maximum bytes of overlaps in grandparent (i.e., level+2) before we
@@ -84,8 +84,8 @@ Version::~Version()
   }
 }
 /*
-	Ëã·¨ÊÇÕÛ°ë²éÕÒ·¨
-	·µ»Ø£º´óÓÚkeyµÄ×îĞ¡Ë÷Òı
+	ç®—æ³•æ˜¯æŠ˜åŠæŸ¥æ‰¾æ³•
+	è¿”å›ï¼šå¤§äºkeyçš„æœ€å°ç´¢å¼•
 
 */
 int FindFile(const InternalKeyComparator& icmp,
@@ -114,7 +114,7 @@ int FindFile(const InternalKeyComparator& icmp,
   return right;
 }
 
-//true£ºuser_key´óÓÚsstableÎÄ¼ş£¨f£©µÄ×î´ókey
+//trueï¼šuser_keyå¤§äºsstableæ–‡ä»¶ï¼ˆfï¼‰çš„æœ€å¤§key
 static bool AfterFile(const Comparator* ucmp,
                       const Slice* user_key, const FileMetaData* f) 
 {
@@ -122,7 +122,7 @@ static bool AfterFile(const Comparator* ucmp,
   return (user_key != NULL && ucmp->Compare(*user_key, f->largest.user_key()) > 0);
 }
 
-//true£ºuser_keyĞ¡ÓÚsstableÎÄ¼ş£¨f£©µÄ×îĞ¡key
+//trueï¼šuser_keyå°äºsstableæ–‡ä»¶ï¼ˆfï¼‰çš„æœ€å°key
 static bool BeforeFile(const Comparator* ucmp,
                        const Slice* user_key, const FileMetaData* f) 
 {
@@ -410,7 +410,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k, std::string*
 	}
 
     // Get the list of files to search in this level
-	// µÈĞ§ÓÚFileMetaData* const* files = files_[level]
+	// ç­‰æ•ˆäºFileMetaData* const* files = files_[level]
     FileMetaData* const* files = &files_[level][0];
     if (level == 0) 
 	{
@@ -435,7 +435,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k, std::string*
     } 
 	else 
 	{
-	  // ¶ÔÓÚlevel-1ÒÔÉÏµÄ²»´æÔÚÖØ¸´£¬Ö±½ÓÕÛ°ë²éÕÒ
+	  // å¯¹äºlevel-1ä»¥ä¸Šçš„ä¸å­˜åœ¨é‡å¤ï¼Œç›´æ¥æŠ˜åŠæŸ¥æ‰¾
       // Binary search to find earliest index whose largest key >= ikey.
       uint32_t index = FindFile(vset_->icmp_, files_[level], ikey);
       if (index >= num_files) 
@@ -831,6 +831,9 @@ class VersionSet::Builder
 	{
       // Merge the set of added files with the set of pre-existing files.
       // Drop any deleted files.  Store the result in *v.
+		/*
+			base_->files_ä¿å­˜æ¯ä¸ªlevelå±‚æ–‡ä»¶å…ƒä¿¡æ¯æ•°
+		*/
       const std::vector<FileMetaData*>& base_files = base_->files_[level];
       std::vector<FileMetaData*>::const_iterator base_iter = base_files.begin();
       std::vector<FileMetaData*>::const_iterator base_end = base_files.end();
@@ -839,9 +842,8 @@ class VersionSet::Builder
       for (FileSet::const_iterator added_iter = added->begin(); added_iter != added->end(); ++added_iter) 
 	  {
         // Add all smaller files listed in base_
-        for (std::vector<FileMetaData*>::const_iterator bpos = std::upper_bound(base_iter, base_end, *added_iter, cmp);
-             base_iter != bpos;
-             ++base_iter) 
+		  std::vector<FileMetaData*>::const_iterator bpos = std::upper_bound(base_iter, base_end, *added_iter, cmp)
+        for ( ; base_iter != bpos; ++base_iter) 
 		{
           MaybeAddFile(v, level, *base_iter);
         }
@@ -1046,7 +1048,7 @@ Status VersionSet::Recover(bool *save_manifest)
   };
 
   // Read "CURRENT" file, which contains a pointer to the current manifest file
-  //´ÓcurrentÎÄ¼şÖĞ¶ÁÈ¡µ±Ç°µÄmanifastÎÄ¼ş
+  //ä»currentæ–‡ä»¶ä¸­è¯»å–å½“å‰çš„manifastæ–‡ä»¶
   std::string current;
   Status s = ReadFileToString(env_, CurrentFileName(dbname_), &current);
   if (!s.ok()) 
@@ -1061,7 +1063,7 @@ Status VersionSet::Recover(bool *save_manifest)
 
   std::string dscname = dbname_ + "/" + current;
   SequentialFile* file;
-  //´æÔÚµÄ»°¶ÁÈ¡£¬²»´æÔÚµÄ»°´´½¨ĞÂµÄ
+  //å­˜åœ¨çš„è¯è¯»å–ï¼Œä¸å­˜åœ¨çš„è¯åˆ›å»ºæ–°çš„
   s = env_->NewSequentialFile(dscname, &file);
   if (!s.ok()) 
   {
@@ -1083,7 +1085,10 @@ Status VersionSet::Recover(bool *save_manifest)
     log::Reader reader(file, &reporter, true/*checksum*/, 0/*initial_offset*/);
     Slice record;
     std::string scratch;
-	//´ÓmanifastÎÄ¼şÖĞÒÀ´Î¶ÁÈ¡record£¬¼ì²écomparatorÊÇ·ñÒ»ÖÂ
+	/*
+		ä»manifastæ–‡ä»¶ä¸­ä¾æ¬¡è¯»å–recordï¼Œæ£€æŸ¥comparatoræ˜¯å¦ä¸€è‡´
+		manifastæ–‡ä»¶å’Œlogæ–‡ä»¶æ ¼å¼å®Œå…¨ä¸€æ ·
+	*/
     while (reader.ReadRecord(&record, &scratch) && s.ok())
 	{
       VersionEdit edit;
@@ -1096,9 +1101,9 @@ Status VersionSet::Recover(bool *save_manifest)
         }
       }
 	  /*
-	     ¼ì²â½âÎöMANIFESTµÄ×îÖÕ×´Ì¬ÖĞµÄ»ù±¾ĞÅÏ¢ÊÇ·ñÍêÕû£¨log_number£¬ SequenceNumber£¬ FileNumber£©£¬½«ÆäÉú³Édbµ±Ç°×´Ì¬
-		 °üº¬dbµÄ¸÷ÖÖÔªĞÅÏ¢£¨FileNumber£¬SequenceNumber£¬ ¸÷¸ölevelµÄÎÄ¼şÊıÄ¿£¬size£¬rangeÏÂ´ÎcompactµÄstart-key£©¶¼
-		 load³É¹¦£¬db»Ö¸´µ½ÉÏÒ»´ÎÍË³öÇ°×´Ì¬
+	     æ£€æµ‹è§£æMANIFESTçš„æœ€ç»ˆçŠ¶æ€ä¸­çš„åŸºæœ¬ä¿¡æ¯æ˜¯å¦å®Œæ•´ï¼ˆlog_numberï¼Œ SequenceNumberï¼Œ FileNumberï¼‰ï¼Œå°†å…¶ç”Ÿæˆdbå½“å‰çŠ¶æ€
+		 åŒ…å«dbçš„å„ç§å…ƒä¿¡æ¯ï¼ˆFileNumberï¼ŒSequenceNumberï¼Œ å„ä¸ªlevelçš„æ–‡ä»¶æ•°ç›®ï¼Œsizeï¼Œrangeä¸‹æ¬¡compactçš„start-keyï¼‰éƒ½
+		 loadæˆåŠŸï¼Œdbæ¢å¤åˆ°ä¸Šä¸€æ¬¡é€€å‡ºå‰çŠ¶æ€
 	  */
       if (s.ok()) 
 	  {
@@ -1162,8 +1167,8 @@ Status VersionSet::Recover(bool *save_manifest)
     Version* v = new Version(this);
     builder.SaveTo(v);
     // Install recovered version
-    Finalize(v); //¼ÆËã³ö×îÓÅµÄlevel£¬score
-    AppendVersion(v); //Ìí¼Óµ½ÕıÔÚ·şÎñµÄVersionÁ´±íÉÏ£¨dummy_versions_£©
+    Finalize(v); //è®¡ç®—å‡ºæœ€ä¼˜çš„levelï¼Œscore
+    AppendVersion(v); //æ·»åŠ åˆ°æ­£åœ¨æœåŠ¡çš„Versioné“¾è¡¨ä¸Šï¼ˆdummy_versions_ï¼‰
     manifest_file_number_ = next_file;
     next_file_number_ = next_file + 1;
     last_sequence_ = last_sequence;
@@ -1477,7 +1482,7 @@ Compaction* VersionSet::PickCompaction()
 
   // We prefer compactions triggered by too much data in a level over
   // the compactions triggered by seeks.
-  // compaction_score_ >= 1ËµÃ÷compaction_level_ÉÏ×î²»¾ùºâ
+  // compaction_score_ >= 1è¯´æ˜compaction_level_ä¸Šæœ€ä¸å‡è¡¡
   const bool size_compaction = (current_->compaction_score_ >= 1);
   const bool seek_compaction = (current_->file_to_compact_ != NULL);
   if (size_compaction)
@@ -1518,7 +1523,7 @@ Compaction* VersionSet::PickCompaction()
   c->input_version_ = current_;
   c->input_version_->Ref();
 
-  // µ±level == 0µÄÊ±ºò£¬ÓÉÓÚÆäÖĞµÄsstable»áÓĞoverlap È¡³öÔÚlevel-0ÖĞÓëÒÑ¾­È·¶¨µÄcompactµÄsstableÓĞoverlapµÄÎÄ¼ş
+  // å½“level == 0çš„æ—¶å€™ï¼Œç”±äºå…¶ä¸­çš„sstableä¼šæœ‰overlap å–å‡ºåœ¨level-0ä¸­ä¸å·²ç»ç¡®å®šçš„compactçš„sstableæœ‰overlapçš„æ–‡ä»¶
   if (level == 0) 
   {
     InternalKey smallest, largest;
@@ -1529,7 +1534,7 @@ Compaction* VersionSet::PickCompaction()
     current_->GetOverlappingInputs(0, &smallest, &largest, &c->inputs_[0]);
     assert(!c->inputs_[0].empty());
   }
-  //È¡µÃĞèÒªÆäËûµÄsstable
+  //å–å¾—éœ€è¦å…¶ä»–çš„sstable
   SetupOtherInputs(c);
 
   return c;
@@ -1690,9 +1695,9 @@ void Compaction::AddInputDeletions(VersionEdit* edit)
   }
 }
 
-//compactÊ±£¬µ±keyµÄvaluetypeÊÇkTypeDeletionÊ±£¬Òª¼ì²élevel-n+1ÒÔÉÏÊÇ·ñ´æÔÚ£¬À´È·¶¨ÊÇ·ñ¶ªÆú¸Ãkey
-//ÒòÎªkeyµÄ±éÀúÊÇË³ĞòµÄ£¬ËùÒÔÃ¿´Î¼ì²é´ÓÉÏÒ»´Î¼ì²é½áÊøµÄµØ·½¿ªÊ¼
-//level_ptrs_[i]ÖĞ¼ÇÂ¼ÁËinput_version_->levels_[i]ÖĞ£¬ÉÏ´Î±È½Ï½áÊøµÄsstableµÄÈİÆ÷ÏÂ±ê
+//compactæ—¶ï¼Œå½“keyçš„valuetypeæ˜¯kTypeDeletionæ—¶ï¼Œè¦æ£€æŸ¥level-n+1ä»¥ä¸Šæ˜¯å¦å­˜åœ¨ï¼Œæ¥ç¡®å®šæ˜¯å¦ä¸¢å¼ƒè¯¥key
+//å› ä¸ºkeyçš„éå†æ˜¯é¡ºåºçš„ï¼Œæ‰€ä»¥æ¯æ¬¡æ£€æŸ¥ä»ä¸Šä¸€æ¬¡æ£€æŸ¥ç»“æŸçš„åœ°æ–¹å¼€å§‹
+//level_ptrs_[i]ä¸­è®°å½•äº†input_version_->levels_[i]ä¸­ï¼Œä¸Šæ¬¡æ¯”è¾ƒç»“æŸçš„sstableçš„å®¹å™¨ä¸‹æ ‡
 bool Compaction::IsBaseLevelForKey(const Slice& user_key)
 {
   // Maybe use binary search to find right entry instead of linear search?

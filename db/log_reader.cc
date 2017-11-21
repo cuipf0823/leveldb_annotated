@@ -35,7 +35,7 @@ Reader::~Reader()
   delete[] backing_store_;
 }
 
-//¸ù¾İinit_offsetÌø¹ılogÎÄ¼şµÄ¿ªÍ·²¿·Ö
+//æ ¹æ®init_offsetè·³è¿‡logæ–‡ä»¶çš„å¼€å¤´éƒ¨åˆ†
 bool Reader::SkipToInitialBlock() 
 {
   size_t offset_in_block = initial_offset_ % kBlockSize;
@@ -224,7 +224,7 @@ void Reader::ReportDrop(uint64_t bytes, const Status& reason)
 }
 
 /*
-	block of log½á¹¹ÈçÏÂ
+	block of logç»“æ„å¦‚ä¸‹
 	| check_sum(uint32) | length (uint16) | type(uint8) | date(length) |
 */
 
