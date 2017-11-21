@@ -63,14 +63,14 @@ class Reader
   SequentialFile* const file_;
   Reporter* const reporter_;
   bool const checksum_;
-  char* const backing_store_;	//大小32k 保存一个block
+  char* const backing_store_;	//澶у皬32k 淇濆瓨涓�涓猙lock
   Slice buffer_;
   bool eof_;   // Last Read() indicated EOF by returning < kBlockSize
 
   // Offset of the last record returned by ReadRecord.
   uint64_t last_record_offset_;
   // Offset of the first location past the end of buffer_.
-  uint64_t end_of_buffer_offset_;											 q
+  uint64_t end_of_buffer_offset_;											 
 
   // Offset at which to start looking for the first record to return
   uint64_t const initial_offset_;

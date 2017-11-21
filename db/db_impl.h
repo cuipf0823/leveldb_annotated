@@ -97,49 +97,49 @@ class DBImpl : public DB
   Status InstallCompactionResults(CompactionState* compact) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   
   /*
-	系统文件,时间,进程相关处理类
+	绯荤粺鏂囦欢,鏃堕棿,杩涚▼鐩稿叧澶勭悊绫?
   */
   Env* const env_;
 
   /*
-    内部做key排序用到的比较方法
+    鍐呴儴鍋歬ey鎺掑簭鐢ㄥ埌鐨勬瘮杈冩柟娉?
   */
   const InternalKeyComparator internal_comparator_;
 
   /*
-	过滤策略类
+	杩囨护绛栫暐绫?
   */
   const InternalFilterPolicy internal_filter_policy_;
 
   /*
-	配置类 关于DB的相关配置
+	閰嶇疆绫?鍏充簬DB鐨勭浉鍏抽厤缃?
   */
   const Options options_;  // options_.comparator == &internal_comparator_
 
   /*
-	是否自己提供了info_log, 一般都是false
+	鏄惁鑷繁鎻愪緵浜唅nfo_log, 涓€鑸兘鏄痜alse
   */
   bool owns_info_log_;
 
   /*
-	是否用户提供了block_cache, 一般都是false
+	鏄惁鐢ㄦ埛鎻愪緵浜哹lock_cache, 涓€鑸兘鏄痜alse
   */
   bool owns_cache_;
 
   /*
-	DB数据库的名字
+	DB鏁版嵁搴撶殑鍚嶅瓧
   */
   const std::string dbname_;
 
   // table_cache_ provides its own synchronization
   /*
-	表缓存
+	琛ㄧ紦瀛?
   */
   TableCache* table_cache_;
 
   // Lock over the persistent DB state.  Non-NULL iff successfully acquired.
   /*
-	文件锁用来锁定lock文件, 保证仅能运行单个DB实例
+	鏂囦欢閿佺敤鏉ラ攣瀹歭ock鏂囦欢, 淇濊瘉浠呰兘杩愯鍗曚釜DB瀹炰緥
   */
   FileLock* db_lock_;
 
@@ -148,27 +148,27 @@ class DBImpl : public DB
   port::AtomicPointer shutting_down_;
   port::CondVar bg_cv_;          // Signalled when background work finishes
   /*
-	可读可写内存
+	鍙鍙啓鍐呭瓨
   */
   MemTable* mem_;
   /*
-	只读内存
+	鍙鍐呭瓨
   */
   MemTable* imm_;                // Memtable being compacted
   port::AtomicPointer has_imm_;  // So bg thread can detect non-NULL imm_
   /*
-	日志文件
+	鏃ュ織鏂囦欢
   */
   WritableFile* logfile_;
   /*
-	记录日志文件个数
+	璁板綍鏃ュ織鏂囦欢涓暟
   */
   uint64_t logfile_number_;
   log::Writer* log_;
   uint32_t seed_;                // For sampling.
 
   // Queue of writers.
-  std::deque<Writer*> writers_;	//写队列
+  std::deque<Writer*> writers_;	//鍐欓槦鍒?
   WriteBatch* tmp_batch_;
 
   SnapshotList snapshots_;
@@ -228,7 +228,7 @@ class DBImpl : public DB
 // Sanitize db options.  The caller should delete result.info_log if
 // it is not equal to src.info_log.
 /*
-	调整用户传入的Option使其合法
+	璋冩暣鐢ㄦ埛浼犲叆鐨凮ption浣垮叾鍚堟硶
 */
 extern Options SanitizeOptions(const std::string& db,const InternalKeyComparator* icmp,const InternalFilterPolicy* ipolicy, const Options& src);
 

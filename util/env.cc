@@ -76,13 +76,14 @@ static Status DoWriteStringToFile(Env* env, const Slice& data, const std::string
   return s;
 }
 
-Status WriteStringToFile(Env* env, const Slice& data£¬ const std::string& fname)
+Status WriteStringToFile(Env* env, const Slice& data, const std::string& fname)
 {
   return DoWriteStringToFile(env, data, fname, false);
 }
 
 Status WriteStringToFileSync(Env* env, const Slice& data,
-                             const std::string& fname) {
+                             const std::string& fname) 
+{
   return DoWriteStringToFile(env, data, fname, true);
 }
 

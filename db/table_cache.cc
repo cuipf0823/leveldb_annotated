@@ -57,16 +57,16 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
   EncodeFixed64(buf, file_number);
   Slice key(buf, sizeof(buf));
   *handle = cache_->Lookup(key);
-  //table cache Î´²éÑ¯µ½key ´ÓtablefileÎÄ¼ş(.ldb)ÖĞ²éÕÒ
+  //table cache æœªæŸ¥è¯¢åˆ°key ä»tablefileæ–‡ä»¶(.ldb)ä¸­æŸ¥æ‰¾
   if (*handle == NULL)
-  {																		 ``
+  {																		
     std::string fname = TableFileName(dbname_, file_number);
     RandomAccessFile* file = NULL;
     Table* table = NULL;
     s = env_->NewRandomAccessFile(fname, &file);
     if (!s.ok()) 
 	{
-	  //tablefile£¨.sst£©ÖĞ²éÕÒ
+	  //tablefileï¼ˆ.sstï¼‰ä¸­æŸ¥æ‰¾
       std::string old_fname = SSTTableFileName(dbname_, file_number);
       if (env_->NewRandomAccessFile(old_fname, &file).ok())
 	  {
@@ -75,7 +75,7 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
     }
     if (s.ok())
 	{
-	 //Í¨¹ıopen»ñÈ¡¾ßÌåµÄTable£¬open³É¹¦Ö®ºó²åÈëµ½TableCacheÖĞ
+	 //é€šè¿‡openè·å–å…·ä½“çš„Tableï¼ŒopenæˆåŠŸä¹‹åæ’å…¥åˆ°TableCacheä¸­
       s = Table::Open(*options_, file, file_size, &table);
     }
 

@@ -83,7 +83,7 @@ class Mutex
 {
  public:
   Mutex();
-  ~Mutex();										  `
+  ~Mutex();										  
 
   void Lock();
   void Unlock();
