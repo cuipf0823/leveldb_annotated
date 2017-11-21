@@ -117,12 +117,17 @@ Options SanitizeOptions(const std::string& dbname, const InternalKeyComparator* 
 	//存在log文件重新命名为log.old
     src.env->RenameFile(InfoLogFileName(dbname), OldInfoLogFileName(dbname));
     Status s = src.env->NewLogger(InfoLogFileName(dbname), &result.info_log);
-    if (!s.ok()) {
+    if (!s.ok()) 
+	{
       // No place suitable for logging
       result.info_log = NULL;
     }
   }
-  if (result.block_cache == NULL) {
+  /*
+	block初始化缓存（lru）大小8mb
+  */
+  if (result.block_cache == NULL) 
+  {
     result.block_cache = NewLRUCache(8 << 20);
   }
   return result;
@@ -154,9 +159,7 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
   // Reserve ten files or so for other uses and give the rest to TableCache.
   const int table_cache_size = options_.max_open_files - kNumNonTableCacheFiles;
   table_cache_ = new TableCache(dbname_, &options_, table_cache_size);
-
-  versions_ = new VersionSet(dbname_, &options_, table_cache_,
-                             &internal_comparator_);
+  versions_ = new VersionSet(dbname_, &options_, table_cache_, &internal_comparator_);
 }
 
 DBImpl::~DBImpl() 

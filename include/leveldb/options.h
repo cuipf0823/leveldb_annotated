@@ -106,7 +106,7 @@ struct Options
   // If NULL, leveldb will automatically create and use an 8MB internal cache.
   // Default: NULL
   /*
-	传入block数据的cache管理
+	blocks控制
   */
   Cache* block_cache;  
 

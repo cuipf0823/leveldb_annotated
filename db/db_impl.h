@@ -132,19 +132,37 @@ class DBImpl : public DB
   const std::string dbname_;
 
   // table_cache_ provides its own synchronization
+  /*
+	表缓存
+  */
   TableCache* table_cache_;
 
   // Lock over the persistent DB state.  Non-NULL iff successfully acquired.
+  /*
+	文件锁用来锁定lock文件, 保证仅能运行单个DB实例
+  */
   FileLock* db_lock_;
 
   // State below is protected by mutex_
   port::Mutex mutex_;
   port::AtomicPointer shutting_down_;
   port::CondVar bg_cv_;          // Signalled when background work finishes
+  /*
+	可读可写内存
+  */
   MemTable* mem_;
+  /*
+	只读内存
+  */
   MemTable* imm_;                // Memtable being compacted
   port::AtomicPointer has_imm_;  // So bg thread can detect non-NULL imm_
+  /*
+	日志文件
+  */
   WritableFile* logfile_;
+  /*
+	记录日志文件个数
+  */
   uint64_t logfile_number_;
   log::Writer* log_;
   uint32_t seed_;                // For sampling.

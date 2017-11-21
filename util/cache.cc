@@ -358,12 +358,15 @@ class ShardedLRUCache : public Cache
       shard_[s].SetCapacity(per_shard);
     }
   }
+
   virtual ~ShardedLRUCache() { }
+
   virtual Handle* Insert(const Slice& key, void* value, size_t charge, void (*deleter)(const Slice& key, void* value))
   {
     const uint32_t hash = HashSlice(key);
     return shard_[Shard(hash)].Insert(key, hash, value, charge, deleter);
   }
+
   virtual Handle* Lookup(const Slice& key) 
   {
     const uint32_t hash = HashSlice(key);
