@@ -8,13 +8,12 @@ leveldb是能够处理十亿级别的key-value型的数据持久存储的C++程�
 * leveldb也支持的数据的压缩，对于减小存储空间以及增快IO效率都有直接的帮助；
 
 ## 性能
-官方声称随机写入速度可以高达40w/s，随机读取的速度6w/s；顺序读写操作的速度明显高于随机读写的数据的速度；leveldb的写入数据速度要大大快于读速度；
+官方声称随机写入速度可以高达40w/s，随机读取的速度6w/s；顺序读写操作的速度明显高于随机读写的数据的速度；
 
 ## 文件
 leveldb在使用过程中会产生多种类型的文件, 如下:
 * log文件 [0-9].log
 > log文件在leveldb中主要是系统故障恢复时候，能够保证不丢失数据。记录在写入内存memtable之前，会写入log文件，这样即使系统发生故障，memtable中的数据没有dump到sstable文件中， leveldb也可以根据log文件恢复内存的memtable数据结构内容，不会造成数据丢失。
-leveldb的写流程是先记binlog，然后写sstable，该日志文件即是binlog。
 
 * lock文件 LOCK
 > 一个db只能有一个db实例操作，通过对lock文件加文件锁实现主动保护。
@@ -23,8 +22,7 @@ leveldb的写流程是先记binlog，然后写sstable，该日志文件即是bin
 > 保存数据的sstable文件 前面为FileNumber；
 
 * MANIFEST文件（DescriptorFile）
-> manifest文件 为了重启db后可以恢复退出前的状态，需要将db的状态保存下来，这些状态信息就保存在该文件中。
-每当db中的状态改变（VersionSet），会将这次的改变（VersionEdit）追加到descriptor文件中。
+> manifest文件为了重启db后可以恢复退出前的状态，需要将db的状态保存下来，这些状态信息就保存在该文件中。每当db中的状态改变（VersionSet），会将这次的改变（VersionEdit）追加到descriptor文件中。
 
 * CURRENT文件
 > current文件记录当前manifest文件的文件名，指出那个manifest才是我们关心的manifest；
@@ -33,4 +31,120 @@ leveldb的写流程是先记binlog，然后写sstable，该日志文件即是bin
 > 对db进行修复的时候，会产生临时文件，前缀为FileNumber
 
 * db运行时打印的日志文件：LOG
-> db运行的时候，打印的info日志文件保存在log中，每次重新运行，如果已经存在log文件，会把LOG文件重新命名为LOG.old
+> db运行的时候，打印的日志文件保存在log中，每次重新运行，如果已经存在log文件，会把LOG文件重新命名为LOG.old
+
+# 结构
+在了解leveldb数据结构前要先理解几个基本的结构和概念：
+## 基础结构和概念
+### ValueType  
+leveldb更新（put/delete）某个key时不会直接修改db中的数据，每一次的操作都是直接新插入一份kv数据，具体的合并和清除有后台compact完成；每次put都会插入一份kv数据，即使key已经存在；ValueType正是为了区分真实的kv数据和删除操作的mock数据;
+```c++
+enum ValueType 
+{
+    kTypeDeletion = 0x0,
+    kTypeValue = 0x1
+};
+```
+
+### SequenceNumber
+ leveldb的每次操作（put/delete）都会有一个操作序列号，全局唯一；key的排序，compact以及leveldb的快照都会依据此序列号；该值其实就是一个uint64_t; 结构如下：
+
+![SequenceNumber结构图](http://oaco4iuuu.bkt.clouddn.com/SequenceNum.png)
+* 存储的时候一个SequenceNumber占64位(一个uint64_t), SequenceNumber只占用56bits，ValueType占用8bits；  
+### UserKey
+用户层面传入的key，使用Slice格式；
+
+### ParsedInternalKey
+leveldb内部使用key，在用户传入Userkey的基础上一些信息；
+    
+```c++
+struct ParsedInternalKey
+{
+    Slice user_key;
+    SequenceNumber sequence;
+     ValueType type; 
+};
+```
+### InternalKey
+leveldb内部使用， 是一个class，为了易用；结构和ParsedInternalKey一样，也是UserKey加上SequenceNumber和ValueType；
+
+### LookupKey
+db内部为了查找memtable\sstable方便 包装使用的key结构，保存有userkey和SequenceNumber和ValueType
+以及dump在内存的数据；结构如下：
+
+![LookupKey结构图](http://oaco4iuuu.bkt.clouddn.com/Lookupkey.png)
+* memtable中进行lookup时使用的是[start, end]，对sstable文件 lookup时候使用的是[kstart, end];
+
+### Comparator
+Comparator类是leveldb中对key排序的时候使用的比较方法，leveldb中的key是升序；用户也可以自定义user key的comparator，作为option传入，默认采用bytes-compare(memcmp)；Comparator是一个抽象类；
+comparator中两个重要成员函数：
+* FindShortestSeparator：获取大于start但是小于limit的最小值；
+* FindShortSuccessor：获取比start大的最小值；
+
+### InternalKeyComparator
+InternalKeyComparator继承于Comparator；db内部做key排序的时候使用，排序时，先使用usercomparator比较user-key，如果user-key相同的时候比较SequenceNumber，SequenceNumber大的为小，因为SequenceNumber在leveldb中是递增的。对于相同的user-key，最新更新的排在前面（SequenceNumber比较大），在查找的时候会被先找到。
+
+## memtable
+leveldb数据在内存中存储格式；用户写入的数据首先被记录在内存中memtable中，当memtable达到阈值（write_buffer_size = 4MB）时候，会转化为自读的immutable memtable同时会再次生成一个新的memtable；后台有压缩线程会把immutable memtable dump成sstable；
+内存中同时最多有一个memtable和immutable memtable；memtable和immutable memtable内存结构完全一样如下：
+
+![memtable结构示意图](http://oaco4iuuu.bkt.clouddn.com/memtable.png)
+
+说明：
+* memtable基本数据模型是skiplist；
+* 注意结构中的key为InternalKey;
+* 代码主要通过两个接口实现：Memtable::Add和Memtable::Get；
+* memtable中内存申请使用的自身封装的arena；memtable有阈值的限制（write_buffer_size），为了便于统计内存的使用，以及内存的使用效率，arena每次按照kBlockSize（4096）单位向系统申请内存，提供地址对齐的内存，记录内存使用。当memtable申请内存时候，size不大于kBlockSize的四分之一，就在当前空闲的内存中分配，否则直接向系统malloc，这样可以有效的服务小内存的申请，避免个别大内存使用影响。
+
+### memtable相关操作
+* Memtable::Add 写入
+    1. 将传入的key和value dump成memtable中存储的格式；
+    2. 调用SkipList：：Insert插入到table_;
+* Memtable::Get 读取
+    1. 从传入的LookupKey中取得memtable中存储的key格式；
+    2. 做MemtableIterator：：seek（）
+    3. seek 失败，返回data not exist。 seek成功，判断ValueType:1. kTypeValue返回value的值； 2.kTypeDeletion，返回data not exist；
+
+## sstable
+ sstable是leveldb中持久化数据的文件格式，整体上可以看出sstable是由数据（data）和元信息（meta/index）组成，数据和元信息统一以block为单位存储（除了文件末尾的footer元信息），读取时也采用统一的读取逻辑。结构示意图如下：
+![sstable结构图](http://oaco4iuuu.bkt.clouddn.com/sstable.png)
+
+footer结构示意图：
+
+![footer结构图](http://oaco4iuuu.bkt.clouddn.com/footer.png)
+
+**说明：**
+1. data_block实际上存储的是key-value的数据；
+2. 每一个data-block对应一个meta-block，保存data-block中的key-size、value-size、kv-counts之类的统计信息，当前的版本未实现；
+3. metaindex-block：保存meta-block的索引信息，当前版本未实现；
+4. index_block：保存每一个data-block的last-key及其在sstable文件中的索引；index_block中每个entry的shared_bytes都为0，unshared_key_data即为data_block的last_key，后面的value_data保存的为索引即使BlockHandle（offset/size）;
+5. footer：文件末尾的固定长度的数据，保存着metaindex-block和index-block的索引信息，为了达到固定的长度添加了padding_bytes，当然最后包括8个bytes的magic的校验。目前版本padding_bytes = 0。
+
+
+### block of sstable
+sstable中的数据是以block单位存储的，有利于IO和解析的粒度。sstable中block的相关结构示意图如下：
+
+![block结构图](http://oaco4iuuu.bkt.clouddn.com/block.png)
+
+entry的组成：
+
+![block_entry结构图](http://oaco4iuuu.bkt.clouddn.com/block_entry.png)
+
+trailer的组成：
+
+![block_trailer结构图](http://oaco4iuuu.bkt.clouddn.com/block_trailer.png)
+
+**说明：**
+* entry：一份key-value数据作为block内的一个entry；leveldb对key的存储进行了前缀压缩即key存储压缩，每一个key记录与上一个key前缀相同的字节（shared_bytes）以及自己独有字节部分（unshared_bytes）。读取时候，对block进行遍历，每一个key根据前一个key以及shared_bytes/unshared_bytes可以构造出来。
+
+* restarts：block内部的key压缩是分区段进行的，若干个（option::block_restart_interval）key做一次前缀压缩，之后重新开始下一轮，每一轮前缀压缩的block offset保存在restarts中。
+* num_of_restarts：记录着总共压缩的论数。
+* 每一个block的后面都会有一个5个字节的trailer，1个字节的type表示block内的数据是否进行了压缩（例如使用了snappy压缩），4个字节crc校验码，type如下:
+
+    ```c++
+    enum CompressionType
+    {
+        kNoCompression     = 0x0,
+        kSnappyCompression = 0x1
+    };
+    ```
