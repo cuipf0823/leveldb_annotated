@@ -30,7 +30,9 @@ class Comparator;
 	varint        varint          varint       unshared_bytes     value_bytes
 
 	trailer的组成：
-	type(chat) + crc(uint32)
+	type(char) + crc(uint32)
+
+	代码中分析不存在trailer该部分；
 																				
 */
 class Block 
@@ -45,11 +47,20 @@ class Block
   Iterator* NewIterator(const Comparator* comparator);
 
  private:
+  /*
+	从data中读取num_of_restarts实际的值
+  */
   uint32_t NumRestarts() const;
 
   const char* data_;
   size_t size_;
+  /*
+	restart数组偏移量
+  */
   uint32_t restart_offset_;     // Offset in data_ of restart array
+  /*
+	owned == True 需要调用者主动删除data_
+  */
   bool owned_;                  // Block owns data_[]
 
   // No copying allowed

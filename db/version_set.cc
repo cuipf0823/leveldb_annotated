@@ -842,7 +842,7 @@ class VersionSet::Builder
       for (FileSet::const_iterator added_iter = added->begin(); added_iter != added->end(); ++added_iter) 
 	  {
         // Add all smaller files listed in base_
-		  std::vector<FileMetaData*>::const_iterator bpos = std::upper_bound(base_iter, base_end, *added_iter, cmp)
+		std::vector<FileMetaData*>::const_iterator bpos = std::upper_bound(base_iter, base_end, *added_iter, cmp);
         for ( ; base_iter != bpos; ++base_iter) 
 		{
           MaybeAddFile(v, level, *base_iter);
@@ -1166,8 +1166,10 @@ Status VersionSet::Recover(bool *save_manifest)
   {
     Version* v = new Version(this);
     builder.SaveTo(v);
-    // Install recovered version
-    Finalize(v); //计算出最优的level，score
+	/*
+		计算出最优的level，score
+	*/
+    Finalize(v); 
     AppendVersion(v); //添加到正在服务的Version链表上（dummy_versions_）
     manifest_file_number_ = next_file;
     next_file_number_ = next_file + 1;

@@ -90,9 +90,7 @@ Iterator* MemTable::NewIterator()
   return new MemTableIterator(&table_);
 }
 
-void MemTable::Add(SequenceNumber s, ValueType type,
-                   const Slice& key,
-                   const Slice& value)
+void MemTable::Add(SequenceNumber s, ValueType type,const Slice& key, const Slice& value)
 {
   // Format of an entry is concatenation of:
   //  key_size     : varint32 of internal_key.size()
@@ -112,14 +110,14 @@ void MemTable::Add(SequenceNumber s, ValueType type,
   p = EncodeVarint32(p, val_size);
   memcpy(p, value.data(), val_size);
   assert((p + val_size) - buf == encoded_len);
-  table_.Insert(buf);//²åÈëskiplist
+  table_.Insert(buf);//æ’å…¥skiplist
 }
 
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) 
 {
   Slice memkey = key.memtable_key();
   Table::Iterator iter(&table_);
-  iter.Seek(memkey.data());	//²éµ½
+  iter.Seek(memkey.data());	//æŸ¥åˆ°
   if (iter.Valid())
   {
     // entry format is:
@@ -133,10 +131,14 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s)
     // all entries with overly large sequence numbers.
     const char* entry = iter.key();
     uint32_t key_length;
-	//×¢Òâ:Ê¹ÓÃvarint±íÊ¾ÕûÊý ÕûÊýÕ¼ÓÃµÄ×Ö½ÚÊýÎª1 - 5 bytes
+	/*
+		æ³¨æ„:ä½¿ç”¨varintè¡¨ç¤ºæ•´æ•° æ•´æ•°å ç”¨çš„å­—èŠ‚æ•°ä¸º1 - 5 bytes	
+	*/
     const char* key_ptr = GetVarint32Ptr(entry, entry+5, &key_length);
-    if (comparator_.comparator.user_comparator()->Compare(
-		Slice(key_ptr, key_length - 8), key.user_key()) == 0) 
+	/*
+		å› ä¸ºmemtableä¸­çš„keyæ˜¯InternalKeyæ‰€ä»¥åŒ…å«SequenceNumå’ŒValueType æ‰€ä»¥key_length - 8 æ˜¯user_keyçš„é•¿åº¦
+	*/
+    if (comparator_.comparator.user_comparator()->Compare(Slice(key_ptr, key_length - 8), key.user_key()) == 0) 
 	{
       // Correct user key
       const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);

@@ -18,12 +18,12 @@ class Mutex;
 class MemTableIterator;
 
 /*
-	dbÊı¾İÔÚÄÚ´æÖĞ´æ´¢µÄ¸ñÊ½,  Ğ´²Ù×÷µÄÊı¾İ»áÏÈĞ´µ½memtableÖĞ£¬µ±memtable´ïµ½Ò»¶¨µÄsize£»
-	»á±ä³ÉÖ»¶ÁµÄmemtable£¨immutable memtable£©£¬Í¬Ê±Éú³ÉÒ»¸öĞÂµÄmemtableÒÑÌá¹©ĞÂµÄĞ´Èë£¬
-	ºóÌ¨µÄcompact½ø³Ì»á¸ºÔğ½«immutable memtable dump³Ésstable¡£ ËùÒÔÄÚ´æÖĞÍ¬Ê±×î¶à»áÓĞ
-	Á½¸ömemtable¡£
+	dbæ•°æ®åœ¨å†…å­˜ä¸­å­˜å‚¨çš„æ ¼å¼,  å†™æ“ä½œçš„æ•°æ®ä¼šå…ˆå†™åˆ°memtableä¸­ï¼Œå½“memtableè¾¾åˆ°ä¸€å®šçš„sizeï¼›
+	ä¼šå˜æˆåªè¯»çš„memtableï¼ˆimmutable memtableï¼‰ï¼ŒåŒæ—¶ç”Ÿæˆä¸€ä¸ªæ–°çš„memtableå·²æä¾›æ–°çš„å†™å…¥ï¼Œ
+	åå°çš„compactè¿›ç¨‹ä¼šè´Ÿè´£å°†immutable memtable dumpæˆsstableã€‚ æ‰€ä»¥å†…å­˜ä¸­åŒæ—¶æœ€å¤šä¼šæœ‰
+	ä¸¤ä¸ªmemtableã€‚
 
-	memtableÖĞÊı¾İµÄ´æ´¢¸ñÊ½ÈçÏÂ£º
+	memtableä¸­æ•°æ®çš„å­˜å‚¨æ ¼å¼å¦‚ä¸‹ï¼š
 	| key-size   |  key-data  | value-size | value-data
 	| (varint32) | (key-size) | (varint32) | (value_size)
 */
@@ -53,6 +53,9 @@ class MemTable
 
   // Returns an estimate of the number of bytes of data in use by this
   // data structure. It is safe to call when MemTable is being modified.
+  /*
+	å†…å­˜çš„ä½¿ç”¨é‡
+  */
   size_t ApproximateMemoryUsage();
 
   // Return an iterator that yields the contents of the memtable.
@@ -66,16 +69,18 @@ class MemTable
   // Add an entry into memtable that maps key to value at the
   // specified sequence number and with the specified type.
   // Typically value will be empty if type==kTypeDeletion.
-  // Ğ´Èë½«´«ÈëµÄkeyºÍvalue dump³ÉmemtableÖĞ´æ´¢µÄÊı¾İ¸ñÊ½
-  void Add(SequenceNumber seq, ValueType type,
-           const Slice& key,
-           const Slice& value);
+  /*
+	å†™å…¥å°†ä¼ å…¥çš„keyå’Œvalue dumpæˆmemtableä¸­å­˜å‚¨çš„æ•°æ®æ ¼å¼
+  */
+   void Add(SequenceNumber seq, ValueType type, const Slice& key, const Slice& value);
 
   // If memtable contains a value for key, store it in *value and return true.
   // If memtable contains a deletion for key, store a NotFound() error
   // in *status and return true.
   // Else, return false.
-  // ¶ÁÈ¡£¨Memtable¶ÔkeyµÄ²éÕÒºÍ±éÀú·â×°³ÉMemtableIterator£©
+  /*
+	è¯»å–ï¼ˆMemtableå¯¹keyçš„æŸ¥æ‰¾å’Œéå†å°è£…æˆMemtableIteratorï¼‰
+  */
   bool Get(const LookupKey& key, std::string* value, Status* s);
 
  private:
@@ -90,7 +95,7 @@ class MemTable
   friend class MemTableIterator;
   friend class MemTableBackwardIterator;
 
-  typedef SkipList<const char*, KeyComparator> Table;  //Ê¹ÓÃÌø±íÊµÏÖmemtable
+  typedef SkipList<const char*, KeyComparator> Table;  //ä½¿ç”¨è·³è¡¨å®ç°memtable
 
   KeyComparator comparator_;
   int refs_;

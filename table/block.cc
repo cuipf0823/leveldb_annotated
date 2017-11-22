@@ -13,7 +13,8 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace leveldb 
+{
 
 inline uint32_t Block::NumRestarts() const 
 {
@@ -45,8 +46,10 @@ Block::Block(const BlockContents& contents)
   }
 }
 
-Block::~Block() {
-  if (owned_) {
+Block::~Block() 
+{
+  if (owned_) 
+  {
     delete[] data_;
   }
 }
@@ -58,10 +61,10 @@ Block::~Block() {
 //
 // If any errors are detected, returns NULL.  Otherwise, returns a
 // pointer to the key delta (just past the three decoded values).
-static inline const char* DecodeEntry(const char* p, const char* limit,
-                                      uint32_t* shared,
-                                      uint32_t* non_shared,
-                                      uint32_t* value_length)
+/*
+	decode Entryç»“æž„ä¸­çš„sharedï¼Œnon_shared, value_length
+*/
+static inline const char* DecodeEntry(const char* p, const char* limit, uint32_t* shared, uint32_t* non_shared, uint32_t* value_length)
 {
   if (limit - p < 3)
   {
@@ -77,9 +80,12 @@ static inline const char* DecodeEntry(const char* p, const char* limit,
   } 
   else
   {
-    if ((p = GetVarint32Ptr(p, limit, shared)) == NULL) return NULL;
-    if ((p = GetVarint32Ptr(p, limit, non_shared)) == NULL) return NULL;
-    if ((p = GetVarint32Ptr(p, limit, value_length)) == NULL) return NULL;
+    if ((p = GetVarint32Ptr(p, limit, shared)) == NULL) 
+		return NULL;
+    if ((p = GetVarint32Ptr(p, limit, non_shared)) == NULL) 
+		return NULL;
+    if ((p = GetVarint32Ptr(p, limit, value_length)) == NULL) 
+		return NULL;
   }
 
   if (static_cast<uint32_t>(limit - p) < (*non_shared + *value_length))
@@ -94,6 +100,9 @@ class Block::Iter : public Iterator
  private:
   const Comparator* const comparator_;
   const char* const data_;      // underlying block contents
+  /*
+	restartæ•°ç»„çš„åç§»é‡
+  */
   uint32_t const restarts_;     // Offset of restart array (list of fixed32)
   uint32_t const num_restarts_; // Number of uint32_t entries in restart array
 
@@ -115,6 +124,9 @@ class Block::Iter : public Iterator
     return (value_.data() + value_.size()) - data_;
   }
 
+  /*
+	æ ¹æ®indexæŸ¥æ‰¾restartsæ•°ç»„ï¼ŒèŽ·å–åç§»é‡
+  */
   uint32_t GetRestartPoint(uint32_t index) 
   {
     assert(index < num_restarts_);
@@ -133,10 +145,7 @@ class Block::Iter : public Iterator
   }
 
  public:
-  Iter(const Comparator* comparator,
-       const char* data,
-       uint32_t restarts,
-       uint32_t num_restarts)
+  Iter(const Comparator* comparator, const char* data, uint32_t restarts, uint32_t num_restarts)
       : comparator_(comparator),
         data_(data),
         restarts_(restarts),
@@ -149,11 +158,13 @@ class Block::Iter : public Iterator
 
   virtual bool Valid() const { return current_ < restarts_; }
   virtual Status status() const { return status_; }
-  virtual Slice key() const {
+  virtual Slice key() const
+  {
     assert(Valid());
     return key_;
   }
-  virtual Slice value() const {
+  virtual Slice value() const 
+  {
     assert(Valid());
     return value_;
   }
@@ -170,8 +181,10 @@ class Block::Iter : public Iterator
 
     // Scan backwards to a restart point before current_
     const uint32_t original = current_;
-    while (GetRestartPoint(restart_index_) >= original) {
-      if (restart_index_ == 0) {
+    while (GetRestartPoint(restart_index_) >= original)
+	{
+      if (restart_index_ == 0)
+	  {
         // No more entries
         current_ = restarts_;
         restart_index_ = num_restarts_;
@@ -187,11 +200,11 @@ class Block::Iter : public Iterator
     } while (ParseNextKey() && NextEntryOffset() < original);
   }
 
-  //restarts¼¯ºÏ¼ÇÂ¼×ÅÃ¿ÂÖÇ°×ºÑ¹Ëõ¿ªÊ¼µÄentryÔÚblockÖÐµÄoffset
+  //restartsé›†åˆè®°å½•ç€æ¯è½®å‰ç¼€åŽ‹ç¼©å¼€å§‹çš„entryåœ¨blockä¸­çš„offset
   /*
-	restartsÖÐ±£´æÔÚÃ¿ÂÖÑ¹ËõµÄ¿ªÊ¼entryÔÚblockÖÐµÄoffset£»
-	1. ÓÃseekµÄkeyÔÚrestarts¼¯ºÏÖÐ×ö¶þ·Ö²éÕÒ£¬ÕÒµ½ËüÊôÓÚµÄÇ°×ºÑ¹ËõÇø¼äµÄ¿ªÊ¼offset£»
-	2. ¸ù¾Ýoffset¶¨Î»µ½blockÖÐ¾ßÌåµÄentry£¬È»ºóÒÀ´Î±éÀú£¨ParseNextKey£©ÕÒµ½ÏàÓ¦µÄkey
+	restartsä¸­ä¿å­˜åœ¨æ¯è½®åŽ‹ç¼©çš„å¼€å§‹entryåœ¨blockä¸­çš„offsetï¼›
+	1. ç”¨seekçš„keyåœ¨restartsé›†åˆä¸­åšäºŒåˆ†æŸ¥æ‰¾ï¼Œæ‰¾åˆ°å®ƒå±žäºŽçš„å‰ç¼€åŽ‹ç¼©åŒºé—´çš„å¼€å§‹offsetï¼›
+	2. æ ¹æ®offsetå®šä½åˆ°blockä¸­å…·ä½“çš„entryï¼Œç„¶åŽä¾æ¬¡éåŽ†ï¼ˆParseNextKeyï¼‰æ‰¾åˆ°ç›¸åº”çš„key
   */
   virtual void Seek(const Slice& target)
   {
@@ -204,16 +217,14 @@ class Block::Iter : public Iterator
       uint32_t mid = (left + right + 1) / 2;
       uint32_t region_offset = GetRestartPoint(mid);
       uint32_t shared, non_shared, value_length;
-      const char* key_ptr = DecodeEntry(data_ + region_offset,
-                                        data_ + restarts_,
-                                        &shared, &non_shared, &value_length);
+      const char* key_ptr = DecodeEntry(data_ + region_offset, data_ + restarts_, &shared, &non_shared, &value_length);
 
       if (key_ptr == NULL || (shared != 0))
 	  {
         CorruptionError();
         return;
       }
-	  //non_shared ²¿·Ö
+	  //non_shared éƒ¨åˆ†
       Slice mid_key(key_ptr, non_shared);
       if (Compare(mid_key, target) < 0) 
 	  {
@@ -292,8 +303,7 @@ class Block::Iter : public Iterator
       key_.resize(shared);
       key_.append(p, non_shared);
       value_ = Slice(p + non_shared, value_length);
-      while (restart_index_ + 1 < num_restarts_ &&
-             GetRestartPoint(restart_index_ + 1) < current_)
+      while (restart_index_ + 1 < num_restarts_ && GetRestartPoint(restart_index_ + 1) < current_)
 	  {
         ++restart_index_;
       }
