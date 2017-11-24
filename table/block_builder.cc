@@ -33,6 +33,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/table_builder.h"
 #include "util/coding.h"
+#include <iostream>
 
 namespace leveldb {
 
@@ -62,7 +63,7 @@ size_t BlockBuilder::CurrentSizeEstimate() const
           sizeof(uint32_t));                      // Restart array length
 }
 
-//ÔÚÒ»¸öblockÍê³ÉÊ±£¨´ïµ½Éè¶¨µÄblock_size£©£¬½«restartsµãµÄ¼¯ºÏºÍÊıÁ¿×·¼Óµ½blockÉÏ
+//åœ¨ä¸€ä¸ªblockå®Œæˆæ—¶ï¼ˆè¾¾åˆ°è®¾å®šçš„block_sizeï¼‰ï¼Œå°†restartsç‚¹çš„é›†åˆå’Œæ•°é‡è¿½åŠ åˆ°blockä¸Š
 Slice BlockBuilder::Finish()
 {
   // Append restart array
@@ -74,7 +75,7 @@ Slice BlockBuilder::Finish()
   finished_ = true;
   return Slice(buffer_);
 }
-//block of sstableµÄĞ´Èë²Ù×÷
+//block of sstableçš„å†™å…¥æ“ä½œ
 void BlockBuilder::Add(const Slice& key, const Slice& value) 
 {
   Slice last_key_piece(last_key_);
@@ -82,7 +83,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value)
   assert(counter_ <= options_->block_restart_interval);
   assert(buffer_.empty() || options_->comparator->Compare(key, last_key_piece) > 0);
   size_t shared = 0;
-  //ÅĞ¶ÏÉÏÂÖÑ¹ËõÊÇ·ñÒÑ¾­Íê³É
+  //åˆ¤æ–­ä¸Šè½®å‹ç¼©æ˜¯å¦å·²ç»å®Œæˆ
   if (counter_ < options_->block_restart_interval)
   {
     // See how much sharing to do with previous string
@@ -101,6 +102,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value)
   const size_t non_shared = key.size() - shared;
 
   // Add "<shared><non_shared><value_size>" to buffer_
+  // std::cout << "key: " << key.data() << " shared: " << shared << " non_shared: " << non_shared << " value: " << value.data() << std::endl;
   PutVarint32(&buffer_, shared);
   PutVarint32(&buffer_, non_shared);
   PutVarint32(&buffer_, value.size());

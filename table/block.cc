@@ -21,7 +21,7 @@ inline uint32_t Block::NumRestarts() const
   assert(size_ >= sizeof(uint32_t));
   return DecodeFixed32(data_ + size_ - sizeof(uint32_t));
 }
-
+//contents.data.size() 是block的长度，但不包含尾部的类型和CRC
 Block::Block(const BlockContents& contents)
     : data_(contents.data.data()),
       size_(contents.data.size()),
@@ -101,13 +101,23 @@ class Block::Iter : public Iterator
   const Comparator* const comparator_;
   const char* const data_;      // underlying block contents
   /*
-	restart数组的偏移量
+	Offset of restart array (list of fixed32)
+	restart数组在整个block中的偏移量，指向restart的开始位置（固定值）
   */
-  uint32_t const restarts_;     // Offset of restart array (list of fixed32)
-  uint32_t const num_restarts_; // Number of uint32_t entries in restart array
-
-  // current_ is offset in data_ of current entry.  >= restarts_ if !Valid
+  uint32_t const restarts_;     
+  /*
+	Number of uint32_t entries in restart array
+	restarts数组的个数
+  */
+  uint32_t const num_restarts_; 
+  /*
+	current_ is offset in data_ of current entry.  >= restarts_ if !Valid
+	当前在整个block中的偏移量
+  */
   uint32_t current_;
+  /*
+	restarts数组的当前索引
+  */
   uint32_t restart_index_;  // Index of restart block in which current_ falls
   std::string key_;
   Slice value_;
@@ -205,6 +215,10 @@ class Block::Iter : public Iterator
 	restarts中保存在每轮压缩的开始entry在block中的offset；
 	1. 用seek的key在restarts集合中做二分查找，找到它属于的前缀压缩区间的开始offset；
 	2. 根据offset定位到block中具体的entry，然后依次遍历（ParseNextKey）找到相应的key
+	3. 调用该接口的两种情形: data_block和index_block
+		index_block: 保存每一个data-block的last-key及其在sstable文件中的索引；
+					 index_block中每个entry的shared_bytes都为0，unshared_key_data即为data_block的last_key，
+					 后面的value_data保存的为索引即使BlockHandle（offset/size）
   */
   virtual void Seek(const Slice& target)
   {
@@ -218,7 +232,8 @@ class Block::Iter : public Iterator
       uint32_t region_offset = GetRestartPoint(mid);
       uint32_t shared, non_shared, value_length;
       const char* key_ptr = DecodeEntry(data_ + region_offset, data_ + restarts_, &shared, &non_shared, &value_length);
-
+	  std::cout << "left: " << left << " right: " << right << " mid: " << mid << " shared: " << shared << " non_shared: " << non_shared << std::endl;
+	  //shared一定为0 ？
       if (key_ptr == NULL || (shared != 0))
 	  {
         CorruptionError();
@@ -261,15 +276,18 @@ class Block::Iter : public Iterator
     ParseNextKey();
   }
 
-  virtual void SeekToLast() {
+  virtual void SeekToLast() 
+  {
     SeekToRestartPoint(num_restarts_ - 1);
-    while (ParseNextKey() && NextEntryOffset() < restarts_) {
+    while (ParseNextKey() && NextEntryOffset() < restarts_)
+	{
       // Keep skipping
     }
   }
 
  private:
-  void CorruptionError() {
+  void CorruptionError()
+  {
     current_ = restarts_;
     restart_index_ = num_restarts_;
     status_ = Status::Corruption("bad entry in block");

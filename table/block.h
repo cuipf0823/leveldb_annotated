@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <iostream>
 #include "leveldb/iterator.h"
 
 namespace leveldb {
@@ -31,8 +32,6 @@ class Comparator;
 
 	trailer的组成：
 	type(char) + crc(uint32)
-
-	代码中分析不存在trailer该部分；
 																				
 */
 class Block 

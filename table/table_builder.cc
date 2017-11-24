@@ -19,17 +19,17 @@ namespace leveldb {
 
 struct TableBuilder::Rep 
 {
-  Options options;	            //data blockµÄÑ¡Ïî
-  Options index_block_options;	//index blockµÄÑ¡Ïî
-  WritableFile* file;           //sstableÎÄ¼þ
-  uint64_t offset;              //ÒªÐ´Èëdata_blockÔÚsstableÎÄ¼þÖÐµÄÆ«ÒÆ 
+  Options options;	            //data blockçš„é€‰é¡¹
+  Options index_block_options;	//index blockçš„é€‰é¡¹
+  WritableFile* file;           //sstableæ–‡ä»¶
+  uint64_t offset;              //è¦å†™å…¥data_blockåœ¨sstableæ–‡ä»¶ä¸­çš„åç§» 
   Status status;
-  BlockBuilder data_block;	    //µ±Ç°²Ù×÷µÄdata_block
-  BlockBuilder index_block;		//sstableÖÐµÄindex_block
-  std::string last_key;	        //µ±Ç°data_block×îºóÒ»¸ökv¶ÔµÄkeyÖµ
-  int64_t num_entries;          //µ±Ç°data_blockµÄ¸öÊý 
+  BlockBuilder data_block;	    //å½“å‰æ“ä½œçš„data_block
+  BlockBuilder index_block;		//sstableä¸­çš„index_block
+  std::string last_key;	        //å½“å‰data_blockæœ€åŽä¸€ä¸ªkvå¯¹çš„keyå€¼
+  int64_t num_entries;          //å½“å‰data_blockçš„ä¸ªæ•° 
   bool closed;					// Either Finish() or Abandon() has been called.
-  FilterBlockBuilder* filter_block; //¸ù¾ÝfilterÊý¾Ý¿ìËÙ¶¨Î»keyÊÇ·ñÔÚblockÖÐ
+  FilterBlockBuilder* filter_block; //æ ¹æ®filteræ•°æ®å¿«é€Ÿå®šä½keyæ˜¯å¦åœ¨blockä¸­
 
   // We do not emit the index entry for a block until we have seen the
   // first key for the next data block.  This allows us to use shorter
@@ -41,9 +41,9 @@ struct TableBuilder::Rep
   //
   // Invariant: r->pending_index_entry is true only if data_block is empty.
   bool pending_index_entry;
-  BlockHandle pending_handle;  // Handle to add to index block	 Ìí¼Óµ½index block µÄdata blockµÄÐÅÏ¢£¨offset£¬ size£©
+  BlockHandle pending_handle;  // Handle to add to index block	 æ·»åŠ åˆ°index block çš„data blockçš„ä¿¡æ¯ï¼ˆoffsetï¼Œ sizeï¼‰
 
-  std::string compressed_output;   //Ñ¹ËõÖ®ºóµÄdata block£¬ÓÃÓÚÁÙÊ±´æ´¢£¬Ð´ºó¼´±»Çå¿Õ
+  std::string compressed_output;   //åŽ‹ç¼©ä¹‹åŽçš„data blockï¼Œç”¨äºŽä¸´æ—¶å­˜å‚¨ï¼Œå†™åŽå³è¢«æ¸…ç©º
 
   Rep(const Options& opt, WritableFile* f)
       : options(opt),
@@ -100,7 +100,7 @@ void TableBuilder::Add(const Slice& key, const Slice& value)
   assert(!r->closed);
   if (!ok()) return;
 
-  //Èç¹ûÒÑ¾­²åÈë¹ýÊý¾Ý£¬Òª±£Ö¤µ±Ç°²åÈëµÄkey > Ö®Ç°×îºóÒ»´Î²åÈëµÄkey sstable±ØÐëÊÇÓÐÐò²åÈë
+  //å¦‚æžœå·²ç»æ’å…¥è¿‡æ•°æ®ï¼Œè¦ä¿è¯å½“å‰æ’å…¥çš„key > ä¹‹å‰æœ€åŽä¸€æ¬¡æ’å…¥çš„key sstableå¿…é¡»æ˜¯æœ‰åºæ’å…¥
   if (r->num_entries > 0)
   {
     assert(r->options.comparator->Compare(key, Slice(r->last_key)) > 0);
@@ -109,11 +109,11 @@ void TableBuilder::Add(const Slice& key, const Slice& value)
   if (r->pending_index_entry) 
   {
     assert(r->data_block.empty());
-	//»ñÈ¡´óÓÚlast_keyµ«ÊÇÐ¡ÓÚkeyµÄ×îÐ¡Öµ
+	//èŽ·å–å¤§äºŽlast_keyä½†æ˜¯å°äºŽkeyçš„æœ€å°å€¼
     r->options.comparator->FindShortestSeparator(&r->last_key, key);
     std::string handle_encoding;
     r->pending_handle.EncodeTo(&handle_encoding);
-	//½«ÕÒµ½µÄlast_keyºÍdata blockÏà¹ØÐÅÏ¢EncodeºóÌí¼Óµ½index blockÖÐ
+	//å°†æ‰¾åˆ°çš„last_keyå’Œdata blockç›¸å…³ä¿¡æ¯EncodeåŽæ·»åŠ åˆ°index blockä¸­
     r->index_block.Add(r->last_key, Slice(handle_encoding));
     r->pending_index_entry = false;
   }
@@ -128,7 +128,7 @@ void TableBuilder::Add(const Slice& key, const Slice& value)
   r->data_block.Add(key, value);
 
   const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
-  //²åÈë´óÐ¡´ïµ½Ô¤ÉèblockÄ¬ÈÏÖµ£¨4k£©£¬½«blockÐ´µ½Êý¾ÝÎÄ¼þÖÐ
+  //æ’å…¥å¤§å°è¾¾åˆ°é¢„è®¾blocké»˜è®¤å€¼ï¼ˆ4kï¼‰ï¼Œå°†blockå†™åˆ°æ•°æ®æ–‡ä»¶ä¸­
   if (estimated_block_size >= r->options.block_size)  
   {
     Flush();
@@ -152,7 +152,7 @@ void TableBuilder::Flush()
   if (ok()) 
   {
     r->pending_index_entry = true;
-    r->status = r->file->Flush(); //±£Ö¤ÎÄ¼þÎïÀí´ÅÅÌÖÐ
+    r->status = r->file->Flush(); //ä¿è¯æ–‡ä»¶ç‰©ç†ç£ç›˜ä¸­
   }
   if (r->filter_block != NULL) 
   {
@@ -201,13 +201,13 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle)
   block->Reset();
 }
 
-//block´¦ÀíÖ®ºóµÄÊý¾ÝÐ´ÈëÎÄ¼þÖÐ
+//blockå¤„ç†ä¹‹åŽçš„æ•°æ®å†™å…¥æ–‡ä»¶ä¸­
 void TableBuilder::WriteRawBlock(const Slice& block_contents, CompressionType type, BlockHandle* handle) 
 {
   Rep* r = rep_;
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
-  r->status = r->file->Append(block_contents);	//blockÐ´ÈësstableÎÄ¼þÖÐ
+  r->status = r->file->Append(block_contents);	//blockå†™å…¥sstableæ–‡ä»¶ä¸­
   if (r->status.ok())
   {
     char trailer[kBlockTrailerSize];
@@ -215,7 +215,7 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents, CompressionType ty
     uint32_t crc = crc32c::Value(block_contents.data(), block_contents.size());
     crc = crc32c::Extend(crc, trailer, 1);  // Extend crc to cover block type
     EncodeFixed32(trailer+1, crc32c::Mask(crc));
-    r->status = r->file->Append(Slice(trailer, kBlockTrailerSize));  //trailerÐ´ÈësstableÎÄ¼þÖÐ
+    r->status = r->file->Append(Slice(trailer, kBlockTrailerSize));  //trailerå†™å…¥sstableæ–‡ä»¶ä¸­
 
     if (r->status.ok())
 	{
@@ -248,7 +248,7 @@ Status TableBuilder::Finish()
   // Write metaindex block
   if (ok())
   {
-	  //±£´æmeta-blockµÄË÷ÒýÐÅÏ¢£»
+	  //ä¿å­˜meta-blockçš„ç´¢å¼•ä¿¡æ¯ï¼›
     BlockBuilder meta_index_block(&r->options);
     if (r->filter_block != NULL)
 	{
@@ -269,7 +269,7 @@ Status TableBuilder::Finish()
   {
     if (r->pending_index_entry)
 	{
-	  //»ñÈ¡±Èlast_key´óµÄ×îÐ¡Öµ
+	  //èŽ·å–æ¯”last_keyå¤§çš„æœ€å°å€¼
       r->options.comparator->FindShortSuccessor(&r->last_key);
       std::string handle_encoding;
       r->pending_handle.EncodeTo(&handle_encoding);

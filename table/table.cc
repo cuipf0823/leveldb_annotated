@@ -27,8 +27,8 @@ struct Table::Rep
   }
 
   Options options;				
-  Status status;				//×´Ì¬
-  RandomAccessFile* file;		//Ëæ»ú¶ÁÈ¡ÎÄ¼þ
+  Status status;				//çŠ¶æ€
+  RandomAccessFile* file;		//éšæœºè¯»å–æ–‡ä»¶
   uint64_t cache_id;
   FilterBlockReader* filter;
   const char* filter_data;
@@ -46,7 +46,7 @@ Status Table::Open(const Options& options, RandomAccessFile* file, uint64_t size
 
   char footer_space[Footer::kEncodedLength];
   Slice footer_input;
-  //¶ÁÈ¡ÎÄ¼þÎ²µÄfooter
+  //è¯»å–æ–‡ä»¶å°¾çš„footer
   Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
                         &footer_input, footer_space);
   if (!s.ok())
@@ -70,7 +70,7 @@ Status Table::Open(const Options& options, RandomAccessFile* file, uint64_t size
 	{
       opt.verify_checksums = true;
     }
-	//¸ù¾Ýindex_blockµÄBlockHandle,¶ÁÈ¡index_block
+	//æ ¹æ®index_blockçš„BlockHandle,è¯»å–index_block
     s = ReadBlock(file, opt, footer.index_handle(), &contents);
     if (s.ok()) 
 	{
@@ -87,11 +87,11 @@ Status Table::Open(const Options& options, RandomAccessFile* file, uint64_t size
     rep->file = file;
     rep->metaindex_handle = footer.metaindex_handle();
     rep->index_block = index_block;
-	//·ÖÅäcacheID 
+	//åˆ†é…cacheID 
     rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
     rep->filter_data = NULL;
     rep->filter = NULL;
-	//·â×°³ÉTable
+	//å°è£…æˆTable
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
   } 
@@ -273,8 +273,9 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
                           void (*saver)(void*, const Slice&, const Slice&)) 
 {
   Status s;
-  //ÕâÀïÊÇindex_block
+  //è¿™é‡Œæ˜¯index_block
   Iterator* iiter = rep_->index_block->NewIterator(rep_->options.comparator);
+  std::cout << "index_block seek..." << std::endl;
   iiter->Seek(k);
   if (iiter->Valid())
   {
@@ -288,6 +289,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k,
 	else 
 	{
       Iterator* block_iter = BlockReader(this, options, iiter->value());
+	  std::cout << "data_block seek..." << std::endl;
       block_iter->Seek(k);
       if (block_iter->Valid())
 	  {

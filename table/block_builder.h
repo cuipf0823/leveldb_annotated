@@ -42,7 +42,7 @@ class BlockBuilder
   }
 
  private:
-  const Options*        options_;     //°üº¬ block_restart_interval = 16 ºÍ block_size =
+  const Options*        options_;     //åŒ…å« block_restart_interval = 16 å’Œ block_size =
   std::string           buffer_;      // Destination buffer
   std::vector<uint32_t> restarts_;    // Restart points
   int                   counter_;     // Number of entries emitted since restart
