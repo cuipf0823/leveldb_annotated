@@ -926,7 +926,8 @@ Status DBImpl::OpenCompactionOutputFile(CompactionState* compact) {
   // Make the output file
   std::string fname = TableFileName(dbname_, file_number);
   Status s = env_->NewWritableFile(fname, &compact->outfile);
-  if (s.ok()) {
+  if (s.ok())
+  {
     compact->builder = new TableBuilder(options_, compact->outfile);
   }
   return s;

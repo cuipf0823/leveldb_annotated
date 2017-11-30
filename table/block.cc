@@ -233,7 +233,7 @@ class Block::Iter : public Iterator
       uint32_t shared, non_shared, value_length;
       const char* key_ptr = DecodeEntry(data_ + region_offset, data_ + restarts_, &shared, &non_shared, &value_length);
 	  std::cout << "left: " << left << " right: " << right << " mid: " << mid << " shared: " << shared << " non_shared: " << non_shared << std::endl;
-	  //shared一定为0 ？
+	  //region_offset是一个block中entry的偏移量, decode后shared肯定是0
       if (key_ptr == NULL || (shared != 0))
 	  {
         CorruptionError();

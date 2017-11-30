@@ -41,7 +41,8 @@ BlockBuilder::BlockBuilder(const Options* options)
     : options_(options),
       restarts_(),
       counter_(0),
-      finished_(false) {
+      finished_(false) 
+{
   assert(options->block_restart_interval >= 1);
   restarts_.push_back(0);       // First restart point is at offset 0
 }
@@ -83,7 +84,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value)
   assert(counter_ <= options_->block_restart_interval);
   assert(buffer_.empty() || options_->comparator->Compare(key, last_key_piece) > 0);
   size_t shared = 0;
-  //判断上轮压缩是否已经完成
+  //判断上轮压缩是否已经完成 block_restart_interval默认为16;
   if (counter_ < options_->block_restart_interval)
   {
     // See how much sharing to do with previous string

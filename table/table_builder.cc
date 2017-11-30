@@ -77,7 +77,8 @@ TableBuilder::~TableBuilder()
   delete rep_;
 }
 
-Status TableBuilder::ChangeOptions(const Options& options) {
+Status TableBuilder::ChangeOptions(const Options& options) 
+{
   // Note: if more fields are added to Options, update
   // this function to catch changes that should not be allowed to
   // change in the middle of building a Table.
@@ -106,6 +107,9 @@ void TableBuilder::Add(const Slice& key, const Slice& value)
     assert(r->options.comparator->Compare(key, Slice(r->last_key)) > 0);
   }
 
+  /*
+	r->pending_index_entry == true 表示data_block为空, 初始化时该值为False
+  */
   if (r->pending_index_entry) 
   {
     assert(r->data_block.empty());
@@ -152,8 +156,14 @@ void TableBuilder::Flush()
   if (ok()) 
   {
     r->pending_index_entry = true;
-    r->status = r->file->Flush(); //保证文件物理磁盘中
+	/*
+	  刷文件内容到物理磁盘中
+	*/
+    r->status = r->file->Flush(); 
   }
+  /*
+	filter_block默认为NULL
+  */
   if (r->filter_block != NULL) 
   {
     r->filter_block->StartBlock(r->offset);
@@ -168,6 +178,9 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle)
   //    crc: uint32
   assert(ok());
   Rep* r = rep_;
+  /*
+	在block完成时候, 添加restarts集合中的元素和总个数添加的data_block的末尾;
+  */
   Slice raw = block->Finish();
 
   Slice block_contents;
@@ -241,8 +254,7 @@ Status TableBuilder::Finish()
   // Write filter block
   if (ok() && r->filter_block != NULL) 
   {
-    WriteRawBlock(r->filter_block->Finish(), kNoCompression,
-                  &filter_block_handle);
+    WriteRawBlock(r->filter_block->Finish(), kNoCompression, &filter_block_handle);
   }
 
   // Write metaindex block
@@ -303,11 +315,13 @@ void TableBuilder::Abandon()
   r->closed = true;
 }
 
-uint64_t TableBuilder::NumEntries() const {
+uint64_t TableBuilder::NumEntries() const
+{
   return rep_->num_entries;
 }
 
-uint64_t TableBuilder::FileSize() const {
+uint64_t TableBuilder::FileSize() const 
+{
   return rep_->offset;
 }
 

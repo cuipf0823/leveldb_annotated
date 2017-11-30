@@ -47,8 +47,7 @@ Status Table::Open(const Options& options, RandomAccessFile* file, uint64_t size
   char footer_space[Footer::kEncodedLength];
   Slice footer_input;
   //读取文件尾的footer
-  Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
-                        &footer_input, footer_space);
+  Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength, &footer_input, footer_space);
   if (!s.ok())
   {
 	return s;
@@ -214,6 +213,7 @@ Iterator* Table::BlockReader(void* arg, const ReadOptions& options, const Slice&
       EncodeFixed64(cache_key_buffer, table->rep_->cache_id);
       EncodeFixed64(cache_key_buffer + 8, handle.offset());
       Slice key(cache_key_buffer, sizeof(cache_key_buffer));
+	  //block的缓存(LRUCache)在查找
       cache_handle = block_cache->Lookup(key);
       if (cache_handle != NULL)
 	  {
@@ -221,6 +221,9 @@ Iterator* Table::BlockReader(void* arg, const ReadOptions& options, const Slice&
       }
 	  else
 	  {
+		/*
+			读取block的内容
+		*/
         s = ReadBlock(table->rep_->file, options, handle, &contents);
         if (s.ok())
 		{

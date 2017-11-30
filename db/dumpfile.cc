@@ -47,6 +47,7 @@ class CorruptionReporter : public log::Reader::Reporter {
     r.push_back('\n');
     dst_->Append(r);
   }
+  
 };
 
 // Print contents of a log file. (*func)() is called on every record.

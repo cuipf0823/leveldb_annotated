@@ -26,6 +26,7 @@ static void DeleteEntry(const Slice& key, void* value)
   delete tf;
 }
 
+
 static void UnrefEntry(void* arg1, void* arg2) 
 {
   Cache* cache = reinterpret_cast<Cache*>(arg1);
@@ -49,8 +50,7 @@ TableCache::~TableCache()
   delete cache_;
 }
 
-Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
-                             Cache::Handle** handle)
+Status TableCache::FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle** handle)
 {
   Status s;
   char buf[sizeof(file_number)];

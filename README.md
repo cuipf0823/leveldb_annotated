@@ -85,6 +85,7 @@ comparator中两个重要成员函数：
 InternalKeyComparator继承于Comparator；db内部做key排序的时候使用，排序时，先使用usercomparator比较user-key，如果user-key相同的时候比较SequenceNumber，SequenceNumber大的为小，因为SequenceNumber在leveldb中是递增的。对于相同的user-key，最新更新的排在前面（SequenceNumber比较大），在查找的时候会被先找到。
 
 ## memtable
+### 结构
 leveldb数据在内存中存储格式；用户写入的数据首先被记录在内存中memtable中，当memtable达到阈值（write_buffer_size = 4MB）时候，会转化为自读的immutable memtable同时会再次生成一个新的memtable；后台有压缩线程会把immutable memtable dump成sstable；
 内存中同时最多有一个memtable和immutable memtable；memtable和immutable memtable内存结构完全一样如下：
 
@@ -106,6 +107,7 @@ leveldb数据在内存中存储格式；用户写入的数据首先被记录在�
     3. seek 失败，返回data not exist。 seek成功，判断ValueType:1. kTypeValue返回value的值； 2.kTypeDeletion，返回data not exist；
 
 ## sstable
+### 结构
  sstable是leveldb中持久化数据的文件格式，整体上可以看出sstable是由数据（data）和元信息（meta/index）组成，数据和元信息统一以block为单位存储（除了文件末尾的footer元信息），读取时也采用统一的读取逻辑。结构示意图如下：
 ![sstable结构图](http://oaco4iuuu.bkt.clouddn.com/sstable.png)
 
@@ -148,3 +150,35 @@ trailer的组成：
         kSnappyCompression = 0x1
     };
     ```
+
+### sstable相关操作
+#### 写入
+代码主要由*TableBuilder::Add()*和*TableBuilder::Finish()*两部分完成;
+
+**TableBuilder::Add()**
+
+1. 如果是一个新block的开始，计算出上一个block的end-key（FinderShortestSeparator），连同BlockHandle添加到IndexBlock中；考虑到indexblock会load到内存，为了减少内存占用, 每一个Indexblock只保存每个data_block的end-key、offset、size；
+2. 将key、value加入当前data_block(BlockBuilder::Add())。
+3. 如果当前data_block达到设定的Option::block_size（4K），将data_block写入磁盘（TableBuilder::Flush-->BlockBuilder::WriteBlock）；
+4. 调用BlockBuilder::Finish，在block末尾添加restarts数据段和num_of_restarts;
+5. 对block的数据进行压缩，然后append到sstable文件中(TableBuilder::WriteBlock--->WriteRawBlock)；
+6. 添加该block的trailer（type/crc），append到sstable文件中；
+7. TableBuilder::Flush中调用file fflush保证block写到磁盘文件中；
+
+**TableBuilder::Finish()**
+1. 将filter block写入到磁盘； 
+2. 将metaindex block写入到磁盘(当前代码未实现此部分, 所以meta_index_block为空)；
+3. 计算出最后一个block的end-key，连同其他的BlockHandle添加到Index_block中，将index block写入到磁盘；
+4. 构造footer，将footer写入到磁盘；
+
+#### 读取
+读取之前需要使用接口table::Open(), 将数据从sstable文件(ldb，sst文件)中加载到Table对象; 调用成功会返回table对象;
+
+**table::Open()**
+1. 根据传入的sstable size，首先读取文件末尾的footer（保存着metaindex-block和index-block的索引信息）；
+2. 解析footer数据，校验magic，获得index_block 和 metaindex_block的blockhandle；
+3. 根据index_block的BlockHandle，读取Index_block(保存每一个data-block的last-key及其在sstable文件中的索引);
+4. 分配cacheID；
+5. 封装成Table；
+
+**Table::InternalGet()**

@@ -38,6 +38,9 @@ class Table
   // for the duration of the returned table's lifetime.
   //
   // *file must remain live while this Table is in use.
+  /*
+	将数据从sstable文件(ldb，sst文件)中加载到Table对象;
+  */
   static Status Open(const Options& options, RandomAccessFile* file, uint64_t file_size,Table** table);
 
   ~Table();

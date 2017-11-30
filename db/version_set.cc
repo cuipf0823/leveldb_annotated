@@ -303,6 +303,7 @@ struct Saver
   std::string* value;
 };
 }
+
 static void SaveValue(void* arg, const Slice& ikey, const Slice& v) 
 {
   Saver* s = reinterpret_cast<Saver*>(arg);
