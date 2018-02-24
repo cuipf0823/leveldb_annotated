@@ -19,16 +19,16 @@ namespace leveldb {
 
 struct TableBuilder::Rep 
 {
-  Options options;	            //data block的选项
-  Options index_block_options;	//index block的选项
-  WritableFile* file;           //sstable文件
-  uint64_t offset;              //要写入data_block在sstable文件中的偏移 
+  Options options;	             //data block的选项
+  Options index_block_options;	 //index block的选项
+  WritableFile* file;            //sstable文件
+  uint64_t offset;               //要写入data_block在sstable文件中的偏移 
   Status status;
-  BlockBuilder data_block;	    //当前操作的data_block
-  BlockBuilder index_block;		//sstable中的index_block
-  std::string last_key;	        //当前data_block最后一个kv对的key值
-  int64_t num_entries;          //当前data_block的个数 
-  bool closed;					// Either Finish() or Abandon() has been called.
+  BlockBuilder data_block;	     //当前操作的data_block
+  BlockBuilder index_block;		 //sstable中的index_block
+  std::string last_key;	         //当前data_block最后一个kv对的key值
+  int64_t num_entries;           //当前data_block的个数 
+  bool closed;					 // Either Finish() or Abandon() has been called.
   FilterBlockBuilder* filter_block; //根据filter数据快速定位key是否在block中
 
   // We do not emit the index entry for a block until we have seen the
@@ -41,8 +41,7 @@ struct TableBuilder::Rep
   //
   // Invariant: r->pending_index_entry is true only if data_block is empty.
   bool pending_index_entry;
-  BlockHandle pending_handle;  // Handle to add to index block	 添加到index block 的data block的信息（offset， size）
-
+  BlockHandle pending_handle;	   // Handle to add to index block 添加到index block 的data block的信息（offset， size）
   std::string compressed_output;   //压缩之后的data block，用于临时存储，写后即被清空
 
   Rep(const Options& opt, WritableFile* f)
@@ -95,13 +94,14 @@ Status TableBuilder::ChangeOptions(const Options& options)
   return Status::OK();
 }
 
+//sstable必须是有序插入
 void TableBuilder::Add(const Slice& key, const Slice& value) 
 {
   Rep* r = rep_;
   assert(!r->closed);
   if (!ok()) return;
 
-  //如果已经插入过数据，要保证当前插入的key > 之前最后一次插入的key sstable必须是有序插入
+  //如果已经插入过数据，要保证当前插入的key > 之前最后一次插入的key 
   if (r->num_entries > 0)
   {
     assert(r->options.comparator->Compare(key, Slice(r->last_key)) > 0);

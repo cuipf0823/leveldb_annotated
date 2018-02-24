@@ -39,6 +39,7 @@ struct Table::Rep
 Status Table::Open(const Options& options, RandomAccessFile* file, uint64_t size,Table** table) 
 {
   *table = NULL;
+  //Footer::kEncodedLength == 48
   if (size < Footer::kEncodedLength)
   {
     return Status::Corruption("file is too short to be an sstable");
@@ -52,7 +53,7 @@ Status Table::Open(const Options& options, RandomAccessFile* file, uint64_t size
   {
 	return s;
   }
-
+  //解析footer数据，校验magic，获得index_block 和 metaindex_block的blockhandle；
   Footer footer;
   s = footer.DecodeFrom(&footer_input);
   if (!s.ok())

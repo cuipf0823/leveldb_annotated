@@ -153,7 +153,7 @@ trailer的组成：
 
 ### sstable相关操作
 #### 写入
-代码主要由*TableBuilder::Add()*和*TableBuilder::Finish()*两部分完成;
+代码主要由 *TableBuilder::Add()* 和 *TableBuilder::Finish()* 两部分完成;
 
 **TableBuilder::Add()**
 
@@ -172,13 +172,20 @@ trailer的组成：
 4. 构造footer，将footer写入到磁盘；
 
 #### 读取
-读取之前需要使用接口table::Open(), 将数据从sstable文件(ldb，sst文件)中加载到Table对象; 调用成功会返回table对象;
+读取之前需要使用接口table::Open(), 将数据从sstable文件(ldb，sst文件)中加载到Table对象; 调用成功会返回table对象; 
 
 **table::Open()**
 1. 根据传入的sstable size，首先读取文件末尾的footer（保存着metaindex-block和index-block的索引信息）；
 2. 解析footer数据，校验magic，获得index_block 和 metaindex_block的blockhandle；
 3. 根据index_block的BlockHandle，读取Index_block(保存每一个data-block的last-key及其在sstable文件中的索引);
-4. 分配cacheID；
+4. 分配cacheID(加入TableCache时候, 需要一个全局的CacheID)；
 5. 封装成Table；
+
+调用该函数生成Table对象, 调用者(TableCache::NewIterator, TableCache::Get)会将该Table对象, 加入TableCache中; 
+
+**TableCache**
+
+tablecache采用的是LRUCache缓存方法, 这样热的数据都保存在内存; 用于加速block的定位; Cache中Key为sstable的FileNumber, Value为封装了元信息的Table指针和sstable对应的Table文件指针;
+
 
 **Table::InternalGet()**
