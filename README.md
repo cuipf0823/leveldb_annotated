@@ -172,20 +172,82 @@ trailer的组成：
 4. 构造footer，将footer写入到磁盘；
 
 #### 读取
-读取之前需要使用接口table::Open(), 将数据从sstable文件(ldb，sst文件)中加载到Table对象; 调用成功会返回table对象; 
+读取首先是FindTable, 然后使用接口table::Open(), 将数据从sstable文件(ldb，sst文件)中加载到Table对象; 调用成功会返回table对象; 
 
-**table::Open()**
+**TableCache**
+* tablecache采用的是LRUCache缓存方法, 这样热的数据都保存在内存; 用于加速block的定位; 
+* Key: sstable的FileNumber;
+* Value: 封装了元信息的Table指针和sstable对应的Table文件指针;
+
+**BlockCache**
+* TableCache类中Options成员, 包含一个全局的BlockCache(NewLRUCache(8 << 20)), 同样是LRUCache算法, 用于保存最近使用的BlockCache;
+* Key: 全局的CacheId 和 Block在sstable文件中的偏移量合成;
+* Value: Block对象的指针;
+
+**TableCache::FindTable**
+1. 根据FileNumber合成的Key在TableCache中查找是否存在;
+2. 如果TableCache中未查找到, 从后缀为 *.ldb* 的tablefile文件中查找;
+3. 如果还未查找到, 从后缀为 *.sst* 的文件中查找;
+4. 查找到之后, 通过Table::open打开Table文件, 获取Table对象;
+5. 插入TableCache中;
+
+**Table::Open()**
 1. 根据传入的sstable size，首先读取文件末尾的footer（保存着metaindex-block和index-block的索引信息）；
 2. 解析footer数据，校验magic，获得index_block 和 metaindex_block的blockhandle；
 3. 根据index_block的BlockHandle，读取Index_block(保存每一个data-block的last-key及其在sstable文件中的索引);
 4. 分配cacheID(加入TableCache时候, 需要一个全局的CacheID)；
 5. 封装成Table；
 
-调用该函数生成Table对象, 调用者(TableCache::NewIterator, TableCache::Get)会将该Table对象, 加入TableCache中; 
-
-**TableCache**
-
-tablecache采用的是LRUCache缓存方法, 这样热的数据都保存在内存; 用于加速block的定位; Cache中Key为sstable的FileNumber, Value为封装了元信息的Table指针和sstable对应的Table文件指针;
-
-
 **Table::InternalGet()**
+1. 根据封装的Table对象中的IndexBlock, 在IndexBlock中的restarts中做二分查找; 找到key所属于的前缀压缩区间的偏移量;
+2. 根据偏移量, 点位到block的entry; 然后依次遍历(ParseNextKey)找到相应的key的BlockHandle;
+3. 根据Table中CacheID和BlockHandle中offset合成的key(BlockCache使用也是LRUCache缓存技术, 缓存中Key由CacheID和offset合成)查找BlockCache是否存在;
+4. 如果在BlockCache缓存中没有找到, 直接Table对象对应的sstable文件中读取DataBlock(根据BlockHandle中的offset和size); 读取之后当然要插入BlockCache中, 因为这是最近使用的DataBlock; 但如果没有使用BlockCache缓存,就不需要插入了;
+5. 读取到DataBlock, 直接查找用户传入的Key即可; 
+6. 调用回调;
+
+
+## log
+### log作用
+leveldb能够在系统故障恢复时，能够保证不会丢失数据。因为在数据写入内存的memtable之前，会先把相关的操作写入log文件，这样即使发生了故障，Memtable中的数据没有来得及Dump到磁盘的SStable文件，leveldb也可以根据log文件恢复内存的Memtable数据结构的内容，不会造成数据的丢失。
+
+### log文件的物理结构
+基本组成单元：32k大小的Block结构；每一次的读取是以一个block作为基本读取单位。写日志的时候，考虑到一致性，并没有按block为单位写，每一次的更新都会对log文件进行IO;
+
+log文件的结构示意图：
+
+![log结构图](http://oaco4iuuu.bkt.clouddn.com/log_structure.png)
+
+说明：
+1. init_data：log文件开头添加的一些信息；读取和写入的时候会跳过这些数据；
+2. block：实际的数据。
+3. log和Manifest文件都使用了这种格式。
+
+block of log结构示意图：
+
+![block of log结构图](http://oaco4iuuu.bkt.clouddn.com/log_block.png)
+
+record组成示意图：
+
+![Record结构图](http://oaco4iuuu.bkt.clouddn.com/log_record.png)
+
+
+说明：
+1. 每一个更新写入作为一个record；
+2. checksum记录的是type和data的crc校验；
+3. 为了避免block内部碎片的产生，一份record可能会跨block，所以根据record中数据占更新写入数据的完整是否，type字段分为四种： kFullType， kFirstType， kMiddleType， kLastType；
+4. data即为保存的数据，长度为length；
+5. trailer：如果block最后剩余的部分不足record的头部长度（checksum、length、type共7bytes），直接填0，最为block的trailer。
+
+### log相关操作
+log的写入是顺序的写入，读取则只会在启动的时候发生，不会是性能的瓶颈，log中的数据没有经过任何的压缩。
+
+**读取**
+1. log的读取仅仅发生在db启动的时候，每次读取出来的为当时一次写入内容；
+2. 相关读取log文件的函数是ReadRecord和ReadPhysicalRecord；
+3. SkipToInitialBlock用于跳过log文件开始的init_data部分；
+
+**写入**
+1. 对log的写入作为record添加；
+2. 如果当前的block剩余的size小于record的头部长度，填充trailer，开始下一个block；
+3. 根据option指定的sync决定是否做log文件的强制sync；

@@ -101,6 +101,9 @@ class Cache
   // Default implementation of Prune() does nothing.  Subclasses are strongly
   // encouraged to override the default implementation.  A future release of
   // leveldb may change Prune() to a pure abstract method.
+  /*
+	删除所有未使用entry
+  */
   virtual void Prune() {}
 
   // Return an estimate of the combined charges of all elements stored in the

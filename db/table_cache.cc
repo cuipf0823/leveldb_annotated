@@ -57,7 +57,7 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size, Cache::Ha
   EncodeFixed64(buf, file_number);
   Slice key(buf, sizeof(buf));
   *handle = cache_->Lookup(key);
-  //table cache 未查询到key 从tablefile文件(.ldb)中查找
+  //table cache 未查询到 从tablefile文件(.ldb)中查找
   if (*handle == NULL)
   {																		
     std::string fname = TableFileName(dbname_, file_number);
