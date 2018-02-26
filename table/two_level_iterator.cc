@@ -169,7 +169,8 @@ void TwoLevelIterator::SkipEmptyDataBlocksForward()
   while (data_iter_.iter() == NULL || !data_iter_.Valid()) 
   {
     // Move to next block
-    if (!index_iter_.Valid()) {
+    if (!index_iter_.Valid())
+	{
       SetDataIterator(NULL);
       return;
     }
@@ -184,7 +185,8 @@ void TwoLevelIterator::SkipEmptyDataBlocksBackward()
   while (data_iter_.iter() == NULL || !data_iter_.Valid()) 
   {
     // Move to next block
-    if (!index_iter_.Valid()) {
+    if (!index_iter_.Valid()) 
+	{
       SetDataIterator(NULL);
       return;
     }

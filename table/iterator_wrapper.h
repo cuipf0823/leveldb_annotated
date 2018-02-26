@@ -14,6 +14,13 @@ namespace leveldb {
 // caches the valid() and key() results for an underlying iterator.
 // This can help avoid virtual function calls and also gives better
 // cache locality.
+
+/*
+	IteratorWrapper是针对Iterator提供了稍作优化的封装; 它会保存每次的Key和Valid的值;
+	从而避免了每次调用Iterator接口产生的虚函数调用; 频繁调用, 直接使用保存的值, 比每
+	次计算有更好的cache locality;
+*/
+
 class IteratorWrapper 
 {
  public:

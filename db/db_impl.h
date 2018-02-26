@@ -133,7 +133,7 @@ class DBImpl : public DB
 
   // table_cache_ provides its own synchronization
   /*
-	表缓存
+	sstable table缓存用来同步
   */
   TableCache* table_cache_;
 
@@ -175,22 +175,33 @@ class DBImpl : public DB
 
   // Set of table files to protect from deletion because they are
   // part of ongoing compactions.
+  /*
+	待定table文件集合(这些文件部分正在被压缩, 保护该部分不被删除)
+  */
   std::set<uint64_t> pending_outputs_;
 
   // Has a background compaction been scheduled or is running?
   bool bg_compaction_scheduled_;
 
   // Information for a manual compaction
+  /*
+	外部触发压缩的信息结构
+  */
   struct ManualCompaction 
   {
-    int level;
-    bool done;
-    const InternalKey* begin;   // NULL means beginning of key range
-    const InternalKey* end;     // NULL means end of key range
-    InternalKey tmp_storage;    // Used to keep track of compaction progress
+    int level;	                //指定压缩的level
+	bool done;					//为了避免外部指定的key - range过大, 一次compact过多的sstable文件,manual_compaction可能不会一次做完, 所以在manual_compaction结构中存在一个done标志来表示是否已经做完
+    const InternalKey* begin;   //NULL means beginning of key range
+    const InternalKey* end;     //NULL means end of key range
+    InternalKey tmp_storage;    //tmp_storage保存上次compact的end_Key, 也就是下一次的start_key;
   };
+
   ManualCompaction* manual_compaction_;
 
+  /*
+	整个DB状态的管理者, 包括当前最新的Version,正在服务的Version链表, 全局的SequenceNumber，FileNumber, 当前的manifest_file_number, 
+	封装的sstable的TableCache, 还有每个level中下一次compact要选取的start_key等等
+  */
   VersionSet* versions_;
 
   // Have we encountered a background error in paranoid mode?

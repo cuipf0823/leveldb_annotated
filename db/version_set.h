@@ -57,7 +57,7 @@ extern bool SomeFileOverlapsRange(
     const Slice* largest_user_key);
 
 /*
-	Ã¿Ò»´Îcompactºó×îĞÂµÄÊı¾İ×´Ì¬ÎªVersion£¬Ò²¾ÍÊÇµ±Ç°dbÔªĞÅÏ¢ÒÔ¼°Ã¿¸ölevelÉÏ¾ßÓĞµÄ×îĞÂÊı¾İ×´Ì¬sstable¼¯ºÏ
+	æ¯ä¸€æ¬¡compactåæœ€æ–°çš„æ•°æ®çŠ¶æ€ä¸ºVersionï¼Œä¹Ÿå°±æ˜¯å½“å‰dbå…ƒä¿¡æ¯ä»¥åŠæ¯ä¸ªlevelä¸Šå…·æœ‰çš„æœ€æ–°æ•°æ®çŠ¶æ€sstableé›†åˆ
 */
 class Version
 {
@@ -133,15 +133,18 @@ class Version
                           void* arg,
                           bool (*func)(void*, int, FileMetaData*));
 
-  VersionSet* vset_;            // VersionSet to which this Version belongsÊôÓÚµÄversionset
-  Version* next_;               // Next version in linked list    Á´±íµÄÖ¸Õë
+  VersionSet* vset_;            // VersionSet to which this Version belongså±äºçš„versionset
+  Version* next_;               // Next version in linked list    é“¾è¡¨çš„æŒ‡é’ˆ
   Version* prev_;               // Previous version in linked list
   int refs_;                    // Number of live refs to this version
 
-  // List of files per level  Ã¿¸ölevelµÄËùÓĞsstableÔªĞÅÏ¢
+  // List of files per level  æ¯ä¸ªlevelçš„æ‰€æœ‰sstableå…ƒä¿¡æ¯
   std::vector<FileMetaData*> files_[config::kNumLevels];
 
-  // Next file to compact based on seek stats.	ĞèÒªcompactµÄÎÄ¼ş
+  // Next file to compact based on seek stats.	
+  /*
+	éœ€è¦compactçš„æ–‡ä»¶
+  */
   FileMetaData* file_to_compact_;
   int file_to_compact_level_;
 
@@ -149,7 +152,11 @@ class Version
   // Score < 1 means compaction is not strictly needed.  These fields
   // are initialized by Finalize().
   double compaction_score_;
-  int compaction_level_;	 //µ±Ç°×î´óµÄcompactÈ¨ÖØÒÔ¼°¶ÔÓ¦µÄlevel
+
+  /*
+	å½“å‰æœ€å¤§çš„compactæƒé‡å¯¹åº”çš„level
+  */
+  int compaction_level_;	 
 
   explicit Version(VersionSet* vset)
       : vset_(vset), next_(this), prev_(this), refs_(0),
@@ -169,9 +176,9 @@ class Version
 };
 
 /*
-	Õû¸ödbµÄµ±Ç°×´Ì¬±»VersionSet¹ÜÀíÕß£¬ÆäÖĞ°üº¬µ±Ç°×îĞÂµÄVersionÒÔ¼°ÆäËûÕıÔÚ·şÎñµÄVersionÁ´±í£»
-	È«¾ÖµÄSequenceNumber£¬FileNumber£»µ±Ç°µÄmanifest_file_number;·â×°µÄsstableµÄTableCache¡£
-	»¹ÓĞÃ¿¸ölevelÖĞÏÂÒ»´ÎcompactÒªÑ¡È¡µÄstart_keyµÈµÈ
+	æ•´ä¸ªdbçš„å½“å‰çŠ¶æ€è¢«VersionSetç®¡ç†è€…ï¼Œå…¶ä¸­åŒ…å«å½“å‰æœ€æ–°çš„Versionä»¥åŠå…¶ä»–æ­£åœ¨æœåŠ¡çš„Versioné“¾è¡¨ï¼›
+	å…¨å±€çš„SequenceNumberï¼ŒFileNumberï¼›å½“å‰çš„manifest_file_number;å°è£…çš„sstableçš„TableCacheã€‚
+	è¿˜æœ‰æ¯ä¸ªlevelä¸­ä¸‹ä¸€æ¬¡compactè¦é€‰å–çš„start_keyç­‰ç­‰
 */
 class VersionSet 
 {
@@ -309,26 +316,26 @@ class VersionSet
 
   void AppendVersion(Version* v);
 
-  Env* const env_;							//Êµ¼ÊµÄEnv
-  const std::string dbname_;				//dbµÄÊı¾İÂ·¾¶
-  const Options* const options_;            //´«ÈëµÄoption
-  TableCache* const table_cache_;			//²Ù×÷sstableµÄtablecache
+  Env* const env_;							//å®é™…çš„Env
+  const std::string dbname_;				//dbçš„æ•°æ®è·¯å¾„
+  const Options* const options_;            //ä¼ å…¥çš„option
+  TableCache* const table_cache_;			//æ“ä½œsstableçš„tablecache
   const InternalKeyComparator icmp_;
-  uint64_t next_file_number_;				//ÏÂÒ»¸öfile_number
-  uint64_t manifest_file_number_;			//manifestÎÄ¼şµÄfile_number
-  uint64_t last_sequence_;			        //×îºóÓÃ¹ıµÄSequenceNumber
-  uint64_t log_number_;					    //logÎÄ¼şµÄFileNumber
-  uint64_t prev_log_number_;                //¸¨ÖúlogÎÄ¼şµÄFileNumber£¬ÔÚcompact memtableÊ±£¬ÖÃÎª0
+  uint64_t next_file_number_;				//ä¸‹ä¸€ä¸ªfile_number
+  uint64_t manifest_file_number_;			//manifestæ–‡ä»¶çš„file_number
+  uint64_t last_sequence_;			        //æœ€åç”¨è¿‡çš„SequenceNumber
+  uint64_t log_number_;					    //logæ–‡ä»¶çš„FileNumber
+  uint64_t prev_log_number_;                //è¾…åŠ©logæ–‡ä»¶çš„FileNumberï¼Œåœ¨compact memtableæ—¶ï¼Œç½®ä¸º0
 
   // Opened lazily
-  WritableFile* descriptor_file_;           //manifestÎÄ¼şµÄ·â×°
-  log::Writer* descriptor_log_;				//manifestÎÄ¼şµÄwriter
-  Version dummy_versions_;					//ÕıÔÚ·şÎñµÄVersionµÄÁ´±í
-  Version* current_;						//µ±Ç°×îĞÂµÄversion
+  WritableFile* descriptor_file_;           //manifestæ–‡ä»¶çš„å°è£…
+  log::Writer* descriptor_log_;				//manifestæ–‡ä»¶çš„writer
+  Version dummy_versions_;					//æ­£åœ¨æœåŠ¡çš„Versionçš„é“¾è¡¨
+  Version* current_;						//å½“å‰æœ€æ–°çš„version
 
   /*
-	ÎªÁË¾¡Á¿¾ùÔÈµÄcompactÃ¿Ò»¸ölevel£¬»á½«ÕâÒ»´ÎcompactµÄend-key×÷ÎªÏÂÒ»´ÎcompactµÄstart-key.
-	compact_pointer_±£´æÁËÃ¿Ò»¸ölevelÏÂÒ»´ÎcompactµÄstart-key¡£
+	ä¸ºäº†å°½é‡å‡åŒ€çš„compactæ¯ä¸€ä¸ªlevelï¼Œä¼šå°†è¿™ä¸€æ¬¡compactçš„end-keyä½œä¸ºä¸‹ä¸€æ¬¡compactçš„start-key.
+	compact_pointer_ä¿å­˜äº†æ¯ä¸€ä¸ªlevelä¸‹ä¸€æ¬¡compactçš„start-keyã€‚
   */
   std::string compact_pointer_[config::kNumLevels];
 
@@ -337,7 +344,7 @@ class VersionSet
   void operator=(const VersionSet&);
 };
 
-// A Compaction encapsulates£¨·â×°£© information about a compaction.
+// A Compaction encapsulatesï¼ˆå°è£…ï¼‰ information about a compaction.
 class Compaction
 {
  public:
@@ -386,26 +393,26 @@ class Compaction
 
   explicit Compaction(int level);
 
-  //ÒªcompactµÄlevel
+  //è¦compactçš„level
   int level_;                        
-  //Éú³ÉsstableµÄ×î´ósize
+  //ç”Ÿæˆsstableçš„æœ€å¤§size
   uint64_t max_output_file_size_;	 
-  //compactÊ±µ±Ç°µÄversion
+  //compactæ—¶å½“å‰çš„version
   Version* input_version_;
-  //¼ÇÂ¼compact¹ı³ÌÖĞµÄ²Ù×÷
+  //è®°å½•compactè¿‡ç¨‹ä¸­çš„æ“ä½œ
   VersionEdit edit_;
 
   // Each compaction reads inputs from "level_" and "level_+1"
   /* 
-	inputs_[0] Îªlevel-nµÄsstableÎÄ¼şĞÅÏ¢
-	inputs_[1] Îªlevel-n+1µÄsstableÎÄ¼şĞÅÏ¢
+	inputs_[0] ä¸ºlevel-nçš„sstableæ–‡ä»¶ä¿¡æ¯
+	inputs_[1] ä¸ºlevel-n+1çš„sstableæ–‡ä»¶ä¿¡æ¯
   */
   std::vector<FileMetaData*> inputs_[2];      // The two sets of inputs
 
   // State used to check for number of of overlapping grandparent files
   // (parent == level_ + 1, grandparent == level_ + 2)
   std::vector<FileMetaData*> grandparents_;
-  //compactÊ±grandparents_ÖĞÒÑ¾­overlapµÄindex
+  //compactæ—¶grandparents_ä¸­å·²ç»overlapçš„index
   size_t grandparent_index_;  // Index in grandparent_starts_
   bool seen_key_;             // Some output key has been seen
   int64_t overlapped_bytes_;  // Bytes of overlap between current output
@@ -417,7 +424,7 @@ class Compaction
   // is that we are positioned at one of the file ranges for each
   // higher level than the ones involved in this compaction (i.e. for
   // all L >= level_ + 2).
-  size_t level_ptrs_[config::kNumLevels];	//sstableµÄÈİÆ÷ÏÂ±ê
+  size_t level_ptrs_[config::kNumLevels];	//sstableçš„å®¹å™¨ä¸‹æ ‡
 };
 
 }  // namespace leveldb

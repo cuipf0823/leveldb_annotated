@@ -570,7 +570,6 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit, Version* base)
   //打印
   Log(options_.info_log, "Level-0 table #%llu: started", (unsigned long long) meta.number);
   Status s;
-
   {
     mutex_.Unlock();
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
@@ -611,7 +610,9 @@ void DBImpl::CompactMemTable()
   mutex_.AssertHeld();
   assert(imm_ != NULL);
 
-  // Save the contents of the memtable as a new Table
+  /*
+	保存imm数据到sstable中
+  */
   VersionEdit edit;
   Version* base = versions_->current();
   base->Ref();
@@ -725,6 +726,7 @@ void DBImpl::RecordBackgroundError(const Status& s) {
 
 void DBImpl::MaybeScheduleCompaction() 
 {
+  //确保已经加锁
   mutex_.AssertHeld();
   //判断是否已经有了后台压缩进程在跑了
   if (bg_compaction_scheduled_) 
@@ -745,7 +747,7 @@ void DBImpl::MaybeScheduleCompaction()
   }
   else 
   {
-	//创建后台压缩进程
+	//创建后台压缩线程
     bg_compaction_scheduled_ = true;
     env_->Schedule(&DBImpl::BGWork, this);
   }
@@ -770,6 +772,7 @@ void DBImpl::BackgroundCall()
   } 
   else 
   {
+	//做实际的compact逻辑
     BackgroundCompaction();
   }
 
@@ -781,10 +784,23 @@ void DBImpl::BackgroundCall()
   bg_cv_.SignalAll();
 }
 
+/*
+	1. 存在自读内存, 压缩内存dump成sstable, 完成后直接返回
+
+	2. 如果存在外部触发的compact, 根据manual_compaction指定的level,start_key,end_key选出Compaction
+	为了避免外部指定的key-range过大, 一次compact过多的sstable文件, manual_compaction可能不会一次
+	做完,所以在manual_compaction结构中存在一个done标志来表示是否已经做完, tmp_storage保存上次compact
+	的end_Key, 也就是下一次的start_key;
+
+	3. 非外部触发, 根据db当前的状态, 进行Compact
+*/
 void DBImpl::BackgroundCompaction() 
 {
   mutex_.AssertHeld();
 
+  /*
+	存在自读内存, 压缩内存dump成sstable, 完成后直接返回
+  */
   if (imm_ != NULL)
   {
     CompactMemTable();
@@ -796,6 +812,10 @@ void DBImpl::BackgroundCompaction()
   InternalKey manual_end;
   if (is_manual)
   {
+
+	/*
+	 外部触发compact
+	*/
     ManualCompaction* m = manual_compaction_;
     c = versions_->CompactRange(m->level, m->begin, m->end);
     m->done = (c == NULL);
@@ -812,6 +832,9 @@ void DBImpl::BackgroundCompaction()
   } 
   else
   {
+	/*
+		非外部触发, 根据db当前的状态, 进行Compact
+	*/
     c = versions_->PickCompaction();
   }
 
@@ -845,6 +868,10 @@ void DBImpl::BackgroundCompaction()
   }
   else
   {
+	/*
+		根据确定出的 Compaction，做具体的 compact 处理（DBImpl::DoCompactionWork()），
+		最后做异常情况的清理（DBImpl::CleanupCompaction()） 。
+	*/
     CompactionState* compact = new CompactionState(c);
     status = DoCompactionWork(compact);
     if (!status.ok()) 

@@ -25,10 +25,12 @@ Status BuildTable(const std::string& dbname,
   meta->file_size = 0;
   iter->SeekToFirst();
 
+  //.ldb文件
   std::string fname = TableFileName(dbname, meta->number);
   if (iter->Valid()) 
   {
     WritableFile* file;
+	//构成sstable对应的文件
     s = env->NewWritableFile(fname, &file);
     if (!s.ok()) 
 	{

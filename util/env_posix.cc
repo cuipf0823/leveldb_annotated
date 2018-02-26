@@ -678,6 +678,9 @@ void PosixEnv::Schedule(void (*function)(void*), void* arg)
   PthreadCall("lock", pthread_mutex_lock(&mu_));
 
   // Start background thread if necessary
+  /*
+	创建后台压缩进程
+  */
   if (!started_bgthread_) 
   {
 	started_bgthread_ = true;
