@@ -115,16 +115,14 @@ int FindFile(const InternalKeyComparator& icmp,
 }
 
 //true：user_key大于sstable文件（f）的最大key
-static bool AfterFile(const Comparator* ucmp,
-                      const Slice* user_key, const FileMetaData* f) 
+static bool AfterFile(const Comparator* ucmp, const Slice* user_key, const FileMetaData* f) 
 {
   // NULL user_key occurs before all keys and is therefore never after *f
   return (user_key != NULL && ucmp->Compare(*user_key, f->largest.user_key()) > 0);
 }
 
 //true：user_key小于sstable文件（f）的最小key
-static bool BeforeFile(const Comparator* ucmp,
-                       const Slice* user_key, const FileMetaData* f) 
+static bool BeforeFile(const Comparator* ucmp, const Slice* user_key, const FileMetaData* f) 
 {
   // NULL user_key occurs after all keys and is therefore never before *f
   return (user_key != NULL && ucmp->Compare(*user_key, f->smallest.user_key()) < 0);
@@ -144,6 +142,9 @@ bool SomeFileOverlapsRange(
     for (size_t i = 0; i < files.size(); i++) 
 	{
       const FileMetaData* f = files[i];
+	  /*
+		smallest_user_key 比sstable文件f的最大key大  或者 largest_user_key比sstable文件f的最小key还小
+	  */
       if (AfterFile(ucmp, smallest_user_key, f) || BeforeFile(ucmp, largest_user_key, f)) 
 	  {
         // No overlap
@@ -157,6 +158,7 @@ bool SomeFileOverlapsRange(
   }
 
   // Binary search over file list
+  // 二分查找
   uint32_t index = 0;
   if (smallest_user_key != NULL)
   {
@@ -584,6 +586,16 @@ bool Version::OverlapInLevel(int level,
   return SomeFileOverlapsRange(vset_->icmp_, (level > 0), files_[level], smallest_user_key, largest_user_key);
 }
 
+/*
+	查询sstable文件最合适的level, 考虑到level-0层做compact以及查找消耗比较大(要处理的文件比较多);
+	所以尽可能让memtable dump的sstable能够直接位于高的level 层; 同时, 如果处于过高层level, 如果对于某些range的key一直做更新, 
+	后续的compact起来消耗较大, 所以设置最大level阈值(kMaxMemCompactLevel == 2);
+
+	1. 根据传入sstabe文件的最大, 最下key值与每一层的所有sstable元信息比较, 发现有重叠, 直接返回level=0;
+	2. 如果没有层叠, 进行下一层查找; 如果在该层出现层叠, 直接返回;
+	3. 对于不产生overlap的层, 考虑使用kMaxGrandParentOverlapBytes做判断;
+
+*/
 int Version::PickLevelForMemTableOutput(const Slice& smallest_user_key, const Slice& largest_user_key)
 {
   int level = 0;
@@ -598,8 +610,10 @@ int Version::PickLevelForMemTableOutput(const Slice& smallest_user_key, const Sl
 	{
       if (OverlapInLevel(level + 1, &smallest_user_key, &largest_user_key))
 	  {
+		//存在overlapped, 直接返回
         break;
       }
+	  //在该层没有出现, 使用kMaxGrandParentOverlapBytes做判断
       if (level + 2 < config::kNumLevels) 
 	  {
         // Check that file does not overlap too many grandparent bytes.

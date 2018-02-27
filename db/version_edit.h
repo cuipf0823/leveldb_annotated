@@ -14,23 +14,23 @@ namespace leveldb {
 
 class VersionSet;
 
-//sstableÎÄ¼şµÄÔªĞÅÏ¢·â×°³ÉFileMetaData
+//sstableæ–‡ä»¶çš„å…ƒä¿¡æ¯å°è£…æˆFileMetaData
 struct FileMetaData 
 {
-  int refs;	                  //ÒıÓÃ¼ÆÊı  
-  int allowed_seeks;          // Seeks allowed until compaction(compactÖ®Ç°ÔÊĞíseekµÄ´ÎÊı)
+  int refs;	                  //å¼•ç”¨è®¡æ•°  
+  int allowed_seeks;          // Seeks allowed until compaction(compactä¹‹å‰å…è®¸seekçš„æ¬¡æ•°)
   uint64_t number;			  // filenumber
   uint64_t file_size;         // File size in bytes
-  InternalKey smallest;       // Smallest internal key served by table(sstableÎÄ¼şµÄ×îĞ¡key)
-  InternalKey largest;        // Largest internal key served by table £¨sstableÎÄ¼şµÄ×î´ókey£©
+  InternalKey smallest;       // Smallest internal key served by table(sstableæ–‡ä»¶çš„æœ€å°key)
+  InternalKey largest;        // Largest internal key served by table ï¼ˆsstableæ–‡ä»¶çš„æœ€å¤§keyï¼‰
 
   FileMetaData() : refs(0), allowed_seeks(1 << 30), file_size(0) { }
 };
 
 /*
-	compact¹ı³ÌÖĞ»áÓĞÒ»ÏµÁĞ¸Ä±äµ±Ç°VersionµÄ²Ù×÷£¨FileNumberÔö¼Ó£¬É¾³ıinputµÄsstable£¬Ôö¼ÓÊä³öµÄsstable....£©£¬
-	ÎªÁËËõĞ¡VersionÇĞ»»µÄÊ±¼äµã£¬½«ÕâĞ©²Ù×÷·â×°³ÉÁËVersionEdit£¬compactÍê³ÉÊ±£¬½«VersionEditÖĞµÄ²Ù×÷Ò»´ÎÓ¦ÓÃ
-	µ½µ±Ç°µÄVersion¼´¿ÉµÃµ½×îĞÂ×´Ì¬µÄVersion
+	compactè¿‡ç¨‹ä¸­ä¼šæœ‰ä¸€ç³»åˆ—æ”¹å˜å½“å‰Versionçš„æ“ä½œï¼ˆFileNumberå¢åŠ ï¼Œåˆ é™¤inputçš„sstableï¼Œå¢åŠ è¾“å‡ºçš„sstable....ï¼‰ï¼Œ
+	ä¸ºäº†ç¼©å°Versionåˆ‡æ¢çš„æ—¶é—´ç‚¹ï¼Œå°†è¿™äº›æ“ä½œå°è£…æˆäº†VersionEditï¼Œcompactå®Œæˆæ—¶ï¼Œå°†VersionEditä¸­çš„æ“ä½œä¸€æ¬¡åº”ç”¨
+	åˆ°å½“å‰çš„Versionå³å¯å¾—åˆ°æœ€æ–°çŠ¶æ€çš„Version
 */
 class VersionEdit 
 {
@@ -99,19 +99,19 @@ class VersionEdit
   std::string comparator_;
   uint64_t log_number_;
   uint64_t prev_log_number_;
-  uint64_t next_file_number_;    //ÏÂÒ»¸ö¿ÉÓÃµÄfilenumber
-  SequenceNumber last_sequence_; //×îºóÓÃ¹ıµÄsequencenumber
+  uint64_t next_file_number_;    //ä¸‹ä¸€ä¸ªå¯ç”¨çš„filenumber
+  SequenceNumber last_sequence_; //æœ€åç”¨è¿‡çš„sequencenumber
   bool has_comparator_;
   bool has_log_number_;
   bool has_prev_log_number_;
   bool has_next_file_number_;
   bool has_last_sequence_;
 
-  //Òª¸üĞÂµÄlevel
+  //è¦æ›´æ–°çš„level
   std::vector< std::pair<int, InternalKey> > compact_pointers_;
-  //ÒªÉ¾³ıµÄsstableÎÄ¼ş£¨compactµÄinput£©
+  //è¦åˆ é™¤çš„sstableæ–‡ä»¶ï¼ˆcompactçš„inputï¼‰
   DeletedFileSet deleted_files_;
-  //ĞÂµÄÎÄ¼ş£¨compactµÄoutput£©
+  //æ–°çš„æ–‡ä»¶ï¼ˆcompactçš„outputï¼‰
   std::vector< std::pair<int, FileMetaData> > new_files_;
 };
 

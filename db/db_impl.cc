@@ -593,6 +593,9 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit, Version* base)
     const Slice max_user_key = meta.largest.user_key();
     if (base != NULL)
 	{
+	  /*
+		为imm(不变内存)生成sstable, 选择合适的level;
+	  */
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
     edit->AddFile(level, meta.number, meta.file_size, meta.smallest, meta.largest);
@@ -625,6 +628,9 @@ void DBImpl::CompactMemTable()
   }
 
   // Replace immutable memtable with the generated Table
+  /*
+	更新当前的lognumber, 应用VersionEdit, 生成新的;
+  */
   if (s.ok())
   {
     edit.SetPrevLogNumber(0);

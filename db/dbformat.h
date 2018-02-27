@@ -37,7 +37,11 @@ static const int kL0_StopWritesTrigger = 12;   //当level-0 中sstable的数量�
 // expensive manifest file operations.  We do not push all the way to
 // the largest level since that can generate a lot of wasted disk
 // space if the same key space is being repeatedly overwritten.
-static const int kMaxMemCompactLevel = 2;	//memtable dump成sstable、允许推向的最高level
+
+/*
+	memtable dump成sstable、允许推向的最高level
+*/
+static const int kMaxMemCompactLevel = 2;	
 
 // Approximate（近似） gap in bytes between samples of data read during iteration.
 static const int kReadBytesPeriod = 1048576;
