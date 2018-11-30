@@ -49,7 +49,7 @@ enum ValueType
 ### SequenceNumber
  leveldb的每次操作（put/delete）都会有一个操作序列号，全局唯一；key的排序，compact以及leveldb的快照都会依据此序列号；该值其实就是一个uint64_t; 结构如下：
 
-![SequenceNumber结构图](http://oaco4iuuu.bkt.clouddn.com/SequenceNum.png)
+![SequenceNumber结构图](http://cuipf0823.github.io/images/SequenceNum.png)
 * 存储的时候一个SequenceNumber占64位(一个uint64_t), SequenceNumber只占用56bits，ValueType占用8bits；  
 ### UserKey
 用户层面传入的key，使用Slice格式；
@@ -72,7 +72,7 @@ leveldb内部使用， 是一个class，为了易用；结构和ParsedInternalKe
 db内部为了查找memtable\sstable方便 包装使用的key结构，保存有userkey和SequenceNumber和ValueType
 以及dump在内存的数据；结构如下：
 
-![LookupKey结构图](http://oaco4iuuu.bkt.clouddn.com/Lookupkey.png)
+![LookupKey结构图](http://cuipf0823.github.io/images/Lookupkey.png)
 * memtable中进行lookup时使用的是[start, end]，对sstable文件 lookup时候使用的是[kstart, end];
 
 ### Comparator
@@ -89,7 +89,7 @@ InternalKeyComparator继承于Comparator；db内部做key排序的时候使用�
 leveldb数据在内存中存储格式；用户写入的数据首先被记录在内存中memtable中，当memtable达到阈值（write_buffer_size = 4MB）时候，会转化为自读的immutable memtable同时会再次生成一个新的memtable；后台有压缩线程会把immutable memtable dump成sstable；
 内存中同时最多有一个memtable和immutable memtable；memtable和immutable memtable内存结构完全一样如下：
 
-![memtable结构示意图](http://oaco4iuuu.bkt.clouddn.com/memtable.png)
+![memtable结构示意图](http://cuipf0823.github.io/images/memtable.png)
 
 说明：
 * memtable基本数据模型是skiplist；
@@ -109,11 +109,11 @@ leveldb数据在内存中存储格式；用户写入的数据首先被记录在�
 ## sstable
 ### 结构
  sstable是leveldb中持久化数据的文件格式，整体上可以看出sstable是由数据（data）和元信息（meta/index）组成，数据和元信息统一以block为单位存储（除了文件末尾的footer元信息），读取时也采用统一的读取逻辑。结构示意图如下：
-![sstable结构图](http://oaco4iuuu.bkt.clouddn.com/sstable.png)
+![sstable结构图](http://cuipf0823.github.io/images/sstable.png)
 
 footer结构示意图：
 
-![footer结构图](http://oaco4iuuu.bkt.clouddn.com/footer.png)
+![footer结构图](http://cuipf0823.github.io/images/footer.png)
 
 **说明：**
 1. data_block实际上存储的是key-value的数据；
@@ -126,15 +126,15 @@ footer结构示意图：
 ### block of sstable
 sstable中的数据是以block单位存储的，有利于IO和解析的粒度。sstable中block的相关结构示意图如下：
 
-![block结构图](http://oaco4iuuu.bkt.clouddn.com/block.png)
+![block结构图](http://cuipf0823.github.io/images/block.png)
 
 entry的组成：
 
-![block_entry结构图](http://oaco4iuuu.bkt.clouddn.com/block_entry.png)
+![block_entry结构图](http://cuipf0823.github.io/images/block_entry.png)
 
 trailer的组成：
 
-![block_trailer结构图](http://oaco4iuuu.bkt.clouddn.com/block_trailer.png)
+![block_trailer结构图](http://cuipf0823.github.io/images/block_trailer.png)
 
 **说明：**
 * entry：一份key-value数据作为block内的一个entry；leveldb对key的存储进行了前缀压缩即key存储压缩，每一个key记录与上一个key前缀相同的字节（shared_bytes）以及自己独有字节部分（unshared_bytes）。读取时候，对block进行遍历，每一个key根据前一个key以及shared_bytes/unshared_bytes可以构造出来。
@@ -216,7 +216,7 @@ leveldb能够在系统故障恢复时，能够保证不会丢失数据。因为�
 
 log文件的结构示意图：
 
-![log结构图](http://oaco4iuuu.bkt.clouddn.com/log_structure.png)
+![log结构图](http://cuipf0823.github.io/images/log_structure.png)
 
 说明：
 1. init_data：log文件开头添加的一些信息；读取和写入的时候会跳过这些数据；
@@ -225,11 +225,11 @@ log文件的结构示意图：
 
 block of log结构示意图：
 
-![block of log结构图](http://oaco4iuuu.bkt.clouddn.com/log_block.png)
+![block of log结构图](http://cuipf0823.github.io/images/log_block.png)
 
 record组成示意图：
 
-![Record结构图](http://oaco4iuuu.bkt.clouddn.com/log_record.png)
+![Record结构图](http://cuipf0823.github.io/images/log_record.png)
 
 
 说明：
